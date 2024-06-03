@@ -1,0 +1,8 @@
+ipykernel
+ipywidgets
+torch
+transformers
+gritlm
+nltk
+tqdm
+matplotlib
