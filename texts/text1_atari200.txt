@@ -1,0 +1,653 @@
+Human-level Atari 200x faster
+Steven Kapturowski1
+, Víctor Campos*1, Ray Jiang*1, Nemanja Rakićević1
+, Hado van Hasselt1
+, Charles
+Blundell1 and Adrià Puigdomènech Badia1
+1DeepMind, *Equal contribution
+The task of building general agents that perform well over a wide range of tasks has been an important goal in reinforcement learning since its inception. The problem has been subject of research of a
+large body of work, with performance frequently measured by observing scores over the wide range of
+environments contained in the Atari 57 benchmark. Agent57 was the first agent to surpass the human
+benchmark on all 57 games, but this came at the cost of poor data-efficiency, requiring nearly 80 billion frames of experience to achieve. Taking Agent57 as a starting point, we employ a diverse set of
+strategies to achieve a 200-fold reduction of experience needed to outperform the human baseline. We
+investigate a range of instabilities and bottlenecks we encountered while reducing the data regime, and
+propose effective solutions to build a more robust and efficient agent. We also demonstrate competitive
+performance with high-performing methods such as Muesli and MuZero. The four key components to
+our approach are (1) an approximate trust region method which enables stable bootstrapping from the
+online network, (2) a normalisation scheme for the loss and priorities which improves robustness when
+learning a set of value functions with a wide range of scales, (3) an improved architecture employing
+techniques from NFNets in order to leverage deeper networks without the need for normalization layers, and (4) a policy distillation method which serves to smooth out the instantaneous greedy policy
+over time.
+1. Introduction
+To develop generally capable agents, the question of how to evaluate them is paramount. The Arcade
+Learning Environment (ALE) (Bellemare et al., 2013) was introduced as a benchmark to evaluate
+agents on an diverse set of tasks which are interesting to humans, and developed externally to the
+Reinforcement Learning (RL) community. As a result, several games exhibit reward structures which
+are highly adversarial to many popular algorithms. Mean and median human normalized scores
+(HNS) (Mnih et al., 2015) over all games in the ALE have become standard metrics for evaluating
+deep RL agents. Recent progress has allowed state-of-the-art algorithms to greatly exceed average
+human-level performance on a large fraction of the games (Espeholt et al., 2018; Schrittwieser et al.,
+2020; Van Hasselt et al., 2016). However, it has been argued that mean or median HNS might not be
+well suited to assess generality because they tend to ignore the tails of the distribution (Badia et al.,
+2019). Indeed, most state-of-the-art algorithms achieve very high scores by performing very well on
+most games, but completely fail to learn on a small number of them.
+Agent57 (Badia et al., 2020) was the first algorithm to obtain above human-average scores on all
+57 Atari games. However, such generality came at the cost of data efficiency; requiring tens of billions
+of environment interactions to achieve above average-human performance in some games, reaching a
+figure of 78 billion frames before beating the human benchmark in all games. Data efficiency remains
+a desirable property for agents to possess, as many real-world challenges are data-limited by time
+and cost constraints (Dulac-Arnold et al., 2019). In this work, our aim is to develop an agent that is
+as general as Agent57 but that requires only a fraction of the environment interactions to achieve the
+same result.
+© 2022 DeepMind. All rights reserved
+arXiv:2209.07550v1 [cs.LG] 15 Sep 2022
+Human-level Atari 200x faster
+Skiing
+Private Eye
+Pitfall!
+Montezuma's Revenge
+Surround
+Asteroids
+Ice Hockey
+Solaris
+Bowling
+Gravitar
+H.E.R.O.
+Berzerk
+Frostbite
+Tennis
+Alien
+Tutankham
+Riverraid
+Ms. Pac-Man
+Pong
+Beam Rider
+Chopper Command
+Seaquest
+Double Dunk
+Freeway
+Space Invaders
+Bank Heist
+Venture
+Battle Zone
+Asterix
+Q*BERT
+Amidar
+Name This Game
+Yars' Revenge
+Phoenix
+Time Pilot
+Demon Attack
+Wizard Of Wor
+Breakout
+Video Pinball
+Fishing Derby
+Enduro
+Stargunner
+Assault
+Zaxxon
+Jamesbond
+Centipede
+Kangaroo
+Atlantis
+Up'n Down
+Defender
+Boxing
+Robotank
+Kung-Fu Master
+Gopher
+Road Runner
+Crazy Climber
+Krull
+1M
+10M
+100M
+1B
+10B
+100B
+Frames to > human score
+390M
+Agent57 MEME
+Figure 1 | Number of environment frames required by agents to outperform the human baseline on
+each game (in log-scale). Lower is better. On average, MEME achieves above human scores using
+63× fewer environment interactions than Agent57. The smallest improvement is 9× (road_runner),
+the maximum is 721× (skiing), and the median across the suite is 35×. We observe small variance
+across seeds (c.f. Figure 8).
+There exist two main trends in the literature when it comes to measuring improvements in the
+learning capabilities of agents. One approach consists in measuring performance after a limited
+budget of interactions with the environment. While this type of evaluation has led to important
+progress (Espeholt et al., 2018; Hessel et al., 2021; van Hasselt et al., 2019), it tends to disregard
+problems which are considered too hard to be solved within the allowed budget (Kaiser et al., 2019).
+On the other hand, one can aim to achieve a target end-performance with as few interactions as
+possible (Schmitt et al., 2020; Silver et al., 2017, 2018). Since our goal is to show that our new agent
+is as general as Agent57, while being more data efficient, we focus on the latter approach.
+Our contributions can be summarized as follows. Building off Agent57, we carefully examine
+bottlenecks which slow down learning and address instabilities that arise when these bottlenecks
+are removed. We propose a novel agent that we call MEME, for MEME is an Efficient Memory-based
+Exploration agent, which introduces solutions to enable taking advantage of three approaches that
+would otherwise lead to instabilities: training the value functions of the whole family of policies
+from Agent57 in parallel, on all policies’ transitions (instead of just the behaviour policy transitions),
+bootstrapping from the online network, and using high replay ratios. These solutions include carefully
+normalising value functions with differing scales, as well as replacing the Retrace (Munos et al., 2016)
+update target with a soft variant of Watkins’ Q(𝜆) (Watkins and Dayan, 1992) that enables faster
+signal propagation by performing less aggressive trace-cutting, and introducing a trust-region for
+value updates. Moreover, we explore several recent advances in deep learning and determine which
+of them are beneficial for non-stationary problems like the ones considered in this work. Finally, we
+examine approaches to robustify performance by introducing a policy distillation mechanism that
+learns a policy head based on the actions obtained from the value network without being sensitive to
+value magnitudes. Our agent outperforms the human baseline across all 57 Atari games in 390M
+frames, using two orders of magnitude fewer interactions with the environment than Agent57 as
+shown in Figure 1.
+2. Related work
+Large scale distributed agents have exhibited compelling results in recent years. Actor-critic (Espeholt
+et al., 2018; Song et al., 2019) as well as value-based agents (Horgan et al., 2018; Kapturowski
+et al., 2018) demonstrated strong performance in a wide-range of environments, including the Atari
+2
+Human-level Atari 200x faster
+57 benchmark. Moreover, approaches such as evolutionary strategies (Salimans et al., 2017) and
+large scale genetic algorithms (Such et al., 2017) presented alternative learning algorithms that
+achieve competitive results on Atari. Finally, search-augmented distributed agents (Hessel et al., 2021;
+Schrittwieser et al., 2020) also hold high performance across many different tasks, and concretely
+they hold the highest mean and median human normalized scores over the 57 Atari games. However,
+all these methods show the same failure mode: they perform poorly in hard exploration games, such
+as Pitfall!, and Montezuma’s Revenge. In contrast, Agent57 (Badia et al., 2020) surpassed the human
+benchmark on all 57 games, showing better general performance. Go-Explore (Ecoffet et al., 2021)
+similarly achieved such general performance, by relying on coarse-grained state representations via a
+downscaling function that is highly specific to Atari.
+Learning as much as possible from previous experience is key for data-efficiency. Since it is often
+desirable for approximate methods to make small updates to the policy (Kakade and Langford, 2002;
+Schulman et al., 2015), approaches have been proposed for enabling multiple learning steps over
+the same batch of experience in policy gradient methods to avoid collecting new transitions for
+every learning step (Schulman et al., 2017). This decoupling between collecting experience and
+learning occurs naturally in off-policy learning agents with experience replay (Lin, 1992; Mnih et al.,
+2015) and Fitted Q Iteration methods (Ernst et al., 2005; Riedmiller, 2005). Multiple approaches for
+making more efficient use of a replay buffer have been proposed, including prioritized sampling of
+transitions (Schaul et al., 2015b), sharing experience across populations of agents (Schmitt et al.,
+2020), learning multiple policies in parallel from a single stream of experience (Riedmiller et al., 2018),
+or reanalyzing old trajectories with the most recent version of a learned model to generate new targets
+in model-based settings (Schrittwieser et al., 2020, 2021) or to re-evaluate goals (Andrychowicz
+et al., 2017).
+The ATARI100k benchmark (Kaiser et al., 2019) was introduced to observe progress in improving
+the data efficiency of reinforcement learning agents, by evaluating game scores after 100k agent steps
+(400k frames). Work on this benchmark has focused on leveraging the use of models (Kaiser et al.,
+2019; Long et al., 2022; Ye et al., 2021), unsupervised learning (Hansen et al., 2019; Liu and Abbeel,
+2021; Schwarzer et al., 2020; Srinivas et al., 2020), or greater use of replay data (Kielak, 2020; van
+Hasselt et al., 2019) or augmentations (Kostrikov et al., 2020; Schwarzer et al., 2020). While we
+consider this to be an important line of research, this tight budget produces an incentive to focus
+on a subset of games where exploration is easier, and it is unclear some games can be solved from
+scratch with such a small data budget. Such a setting is likely to prevent any meaningful learning on
+hard-exploration games, which is in contrast with the goal of our work.
+3. Background: Agent57
+Our work builds on top of Agent57, which combines three main ideas: (i) a distributed deep RL
+framework based on Recurrent Replay Distributed DQN (R2D2) (Kapturowski et al., 2018), (ii) exploration with a family of policies and the Never Give Up (NGU) intrinsic reward (Badia et al., 2019),
+and (iii) a meta-controller that dynamically adjusts the discount factor and balances exploration and
+exploitation throughout the course of training, by selecting from a family of policies. Below, we give a
+general introduction to the problem setting and some of the relevant components of Agent57.
+Problem definition. We consider the problem of discounted infinite-horizon RL in Markov Decision
+Processes (MDP) (Puterman, 1994). The goal is to find a policy 𝜋 that maximises the expected sum
+of future discounted rewards, 𝔼𝜋[
+Í
+𝑡≥0 𝛾
+𝑡
+𝑟𝑡], where 𝛾 ∈ [0, 1) is the discount factor, 𝑟𝑡 = 𝑟(𝑥𝑡
+, 𝑎𝑡) is
+the reward at time t, 𝑥𝑡
+is the state at time t, and 𝑎𝑡 ∼ 𝜋(𝑎|𝑥𝑡) is the action generated by following
+some policy 𝜋. In the off-policy learning setting, data generated by a behavior policy 𝜇 is used to
+3
+Human-level Atari 200x faster
+learn about the target policy 𝜋. This can be achieved by employing a variant of Q-learning (Watkins
+and Dayan, 1992) to estimate the action-value function, 𝑄
+𝜋
+(𝑥, 𝑎) = 𝔼𝜋[
+Í
+𝑡≥0 𝛾
+𝑡
+𝑟𝑡
+|𝑥𝑡 = 𝑥, 𝑎𝑡 = 𝑎]. The
+estimated action-value function can then be used to derive a new policy 𝜋(𝑎|𝑥) using the 𝜖-greedy
+operator G𝜖 (Sutton and Barto, 2018). 1 This new policy can then be used as target policy for
+another iteration, repeating the process. Agent57 uses a deep neural network with parameters 𝜃 to
+estimate action-value functions, 𝑄
+𝜋
+(𝑥, 𝑎; 𝜃)
+2
+, trained on return estimates 𝐺𝑡 derived with Retrace
+from sequences of off-policy data (Munos et al., 2016). In order to stabilize learning, a target network
+is used for bootstrapping the return estimates using double Q-learning (Van Hasselt et al., 2016); the
+parameters of this target network, 𝜃𝑇 , are periodically copied from the online network parameters
+𝜃 (Mnih et al., 2015).
+Distributed RL framework. Agent57 is a distributed deep RL agent based on R2D2 that decouples
+acting from learning. Multiple actors interact with independent copies of the environment and feed
+trajectories to a central replay buffer. A separate learning process obtains trajectories from this buffer
+using prioritized sampling and updates the neural network parameters to predict the action-value
+function at each state. Actors obtain parameters from the learner periodically. See Appendix D for
+more details.
+Exploration with NGU. Agent57 uses the Never Give Up (NGU) intrinsic reward to encourage
+exploration. It aims at learning a family of 𝑁 = 32 policies which maximize different weightings of the
+extrinsic reward given by the environment (𝑟
+𝑒
+𝑡
+) and the intrinsic reward (𝑟
+𝑖
+𝑡
+), 𝑟𝑗,𝑡 = 𝑟
+𝑒
+𝑡 + 𝛽𝑗𝑟
+𝑖
+𝑡
+(𝛽𝑗 ∈ ℝ+
+,
+𝑗 ∈ {0, . . . , 𝑁 −1}). The value of 𝛽𝑗 controls the degree of exploration, with higher values encouraging
+more exploratory behaviors, and each policy in the family is optimized with a different discount
+factor 𝛾𝑗
+. The Universal Value Function Approximators (UVFA) framework (Schaul et al., 2015a) is
+employed to efficiently learn 𝑄
+𝜋
+𝑗
+(𝑥, 𝑎; 𝜃) = 𝔼𝜋𝑗[
+Í
+𝑡≥0 𝛾
+𝑡
+𝑗
+𝑟𝑗,𝑡|𝑥𝑡 = 𝑥, 𝑎𝑡 = 𝑎] (we use a shorthand notation
+𝑄
+𝑗
+(𝑥, 𝑎; 𝜃)) for 𝑗 ∈ {0, . . . , 𝑁 − 1} using a single set of shared parameters 𝜃. The policy 𝜋
+𝑗
+(𝑎|𝑥) can
+then be derived using the 𝜖-greedy operator as G𝜖𝑄
+𝑗
+(𝑥, 𝑎; 𝜃). We refer the reader to Appendix G for
+more details.
+Meta-controller. Agent57 introduces an adaptive meta-controller that decides which policies from
+the family of N policies to use for collecting experience based on their episodic returns. This naturally
+creates a curriculum over 𝛽𝑗 and 𝛾𝑗 by adapting their value throughout training. This optimization
+process is formulated as a non-stationary bandit problem. A detailed description about the metacontroller implementation is provided in Appendix E.
+Q-function separation. The architecture of the Q-function in Agent57 is implemented as two
+separate networks in order to split the intrinsic and extrinsic components. The network parameters of
+𝑄
+𝑗
+(𝑥, 𝑎; 𝜃𝑒) and 𝑄
+𝑗
+(𝑥, 𝑎; 𝜃𝑖) are separate and independently optimized with 𝑟
+𝑒
+𝑗
+and 𝑟
+𝑖
+𝑗
+, respectively. The
+main motivation behind this decomposition is to prevent the gradients of the decomposed intrinsic and
+extrinsic value function heads from interfering with each other. This can be beneficial in environments
+where the intrinsic reward is poorly aligned with the task’s extrinsic reward.
+4. MEME: Improving the data efficiency of Agent57
+This section describes the main algorithmic contributions of the MEME agent, aimed at improving the
+data-efficiency of Agent57. These contributions aim to achieve faster propagation of learning signals
+related to rare events ( A ), stabilize learning under differing value scales ( B ), improve the neural
+network architecture ( C ), and make updates more robust under a rapidly-changing policy ( D ). For
+1We also use G B G0 to denote the pure greedy operator.
+2For convenience, we occasionally omit (𝑥, 𝑎) or 𝜃 from 𝑄(𝑥, 𝑎; 𝜃), 𝜋(𝑥, 𝑎; 𝜃) when there is no danger of confusion.
+4
+Human-level Atari 200x faster
+Torso LSTM
+Q-value
+Head
+Policy
+Head
+Qj
+(at
+, xt
+) 𝛑j
+(at | xt
+)
+N-mixtures
+Torso LSTM
+Q-value
+Head
+Policy
+Head
+Q1
+(at
+, 
+x
+t
+)
+𝛑1
+(at | xt
+)
+Member policy 1
+Q-value
+Head
+Policy
+Head
+QN
+(at
+, xt
+) 𝛑N
+(at | xt
+)
+Member policy 1
+… …
+Dueling
+Head
+Dueling
+Head
+Qi
+(at
+, xt
+)
+Qe
+(at
+, 
+xt
+)
++
+Qj
+(at
+, xt
+)
+Q-value Head
+N policy family members
+Torso LSTM
+Q-value
+Head
+Policy
+Head
+Q1
+(at
+, xt
+) 𝛑1
+(at 
+| xt
+)
+N policy family members
+…
+QN
+(at
+, x
+t
+) 𝛑N
+(at 
+| xt
+)
+Torso LSTM
+Q1
+(xt
+, at
+; θ)
+𝛑1
+(at | xt
+)
+N policy family members
+…
+QN
+(xt
+, at
+; θ)
+𝛑N
+(at | xt
+)
+Policy
+Head
+Q-value
+Head
+Figure 2 | MEME agent network architecture. The output of the LSTM block is passed to each of the N
+members of the family of policies, depicted as a light-grey box. Each policy consists of an Q-value and
+policy heads. The Q-value head is similar as in Agent57 paper, while the policy head is introduced for
+acting and target computation, and trained via policy distillation.
+clarity of exposition, we label methods according to the type of limitation they address.
+A1 Bootstrapping with online network. Target networks are frequently used in conjunction with
+value-based agents due to their stabilizing effect when learning from off-policy data (Mnih et al.,
+2015; Van Hasselt et al., 2016). This design choice places a fundamental restriction on how quickly
+changes in the Q-function are able to propagate. This issue can be mitigated to some extent by
+simply updating the target network more frequently, but the result is typically a less stable agent. To
+accelerate signal propagation while maintaining stability, we use online network bootstrapping, and
+we stabilise the learning by introducing an approximate trust region for value updates that allows us
+to filter which samples contribute to the loss. The trust region masks out the loss at any timestep for
+which both of the following conditions hold:
+|𝑄
+𝑗
+(𝑥𝑡
+, 𝑎𝑡; 𝜃) − 𝑄
+𝑗
+(𝑥𝑡
+, 𝑎𝑡; 𝜃𝑇 )| > 𝛼𝜎𝑗 (1)
+sgn(𝑄
+𝑗
+(𝑥𝑡
+, 𝑎𝑡; 𝜃) − 𝑄
+𝑗
+(𝑥𝑡
+, 𝑎𝑡; 𝜃𝑇 )) ≠ sgn(𝑄
+𝑗
+(𝑥𝑡
+, 𝑎𝑡; 𝜃) − 𝐺𝑡) (2)
+where 𝛼 is a fixed hyperparameter, 𝐺𝑡 denotes the return estimate, 𝜃 and 𝜃𝑇 denote the online and
+target parameters respectively, and 𝜎𝑗
+is the standard deviation of the TD-errors (a more precise
+description of which we defer until B1). Intuitively, we only mask if the current value of the online
+network is outside of the trust region (Equation 1) and the sign of the TD-error points away from the trust
+region (Equation 2), as depicted in Figure 3 in red. We note that a very similar trust region scheme is
+used for the value-function in most Proximal Policy Optimization (PPO) implementations (Schulman
+et al., 2017), though not described in the original paper. In contrast, the PPO version instead uses a
+constant threshold, and thus is not able to adapt to differing scales of value functions.
+Qj(xt
+,at
+;θT
+) Qj(xt
+,at
+;θT
+) + ασ Qj j (xt
+,at
+;θT
+) - ασj
+Qj(xt
+,at
+;θ)
+Figure 3 | Trust region. The position of dots is given by the relationship between the values predicted
+by the online network, 𝑄
+𝑗
+(𝑥𝑡
+, 𝑎𝑡; 𝜃), and the values predicted by the target network, 𝑄
+𝑗
+(𝑥𝑡
+, 𝑎𝑡; 𝜃𝑇 )
+(Equation 1 and left hand side of Equation 2), the box represents the trust region bounds defined in
+Equation 1, and the direction of the arrow is given by the right hand side of Equation 2. Green-colored
+transitions are used in the loss computation, whereas red ones are masked out.
+A2 Target computation with tolerance. Agent57 uses Retrace (Munos et al., 2016) to compute
+return estimates from off-policy data, but we observed that it tends to cut traces too aggressively when
+5
+Human-level Atari 200x faster
+using 𝜖-greedy policies thus slowing down the propagation of information into the value function.
+Preliminary experiments showed that data-efficiency was improved in many dense-reward tasks when
+replacing Retrace with Peng’s Q(𝜆) (Peng and Williams, 1994), but its lack of off-policy corrections
+tends to result in degraded performance as data becomes more off-policy (e.g. by increasing the
+expected number of times that a sequence is sampled from replay, or by sharing data across a family
+of policies). This motivates us to propose an alternative return estimator, which we derive from
+Q(𝜆) (Watkins and Dayan, 1992):
+𝐺𝑡 = max
+𝑎
+𝑄(𝑥𝑡
+, 𝑎) + ∑︁
+𝑘≥0
+ Ö
+𝑘−1
+𝑖=0
+𝜆𝑖
+!
+𝛾
+𝑘
+(𝑟𝑡+𝑘 + 𝛾 max
+𝑎
+𝑄(𝑥𝑡+𝑘+1, 𝑎) − max
+𝑎
+𝑄(𝑥𝑡+𝑘, 𝑎)) (3)
+where Î𝑘−1
+𝑖=0
+𝜆𝑖 ∈ [0, 1] effectively controls how much information from the future is used in the
+return estimation and is generally used as a trace cutting coefficient to perform off-policy correction.
+Peng’s Q(𝜆) does not perform any kind of off-policy correction and sets 𝜆𝑖 = 𝜆, whereas Watkins’
+Q(𝜆) (Watkins and Dayan, 1992) aggressively cuts traces whenever it encounters an off-policy action
+by using 𝜆𝑖 = 𝜆𝟙𝑎𝑖 ∈argmax𝑎𝑄(𝑥𝑖
+,𝑎)
+, where 𝟙 denotes the indicator function. We propose to use a softer
+trace cutting mechanism by adding a fixed tolerance parameter 𝜅 and taking the expectation of trace
+coefficients under 𝜋:
+𝜆𝑖 = 𝜆𝔼𝑎∼𝜋(𝑎|𝑥𝑡)
+
+𝟙[𝑄(𝑥𝑡
+,𝑎𝑡;𝜃) ≥𝑄(𝑥𝑡
+,𝑎;𝜃)−𝜅|𝑄(𝑥𝑖
+,𝑎;𝜃) |]
+
+(4)
+Finally, we replace all occurrences of the max operator in Equation 3 with the expectation under 𝜋.
+The resulting return estimator, which we denote Soft Watkins Q(𝜆), leads to more transitions being
+used and increased sample efficiency. Note that Watkins Q(𝜆) is recovered when setting 𝜅 = 0 and
+𝜋 = G (𝑄).
+B1 Loss and priority normalization. As we learn a family of Q-functions which vary over a wide
+range of discount factors and intrinsic reward scales, we expect that the Q-functions will vary
+considerably in scale. This may cause the larger-scale Q-values to dominate learning and destabilize
+learning of smaller Q-values. This is a particular concern in environments with very small extrinsic
+reward scales. To counteract this effect we introduce a normalization scheme on the TD-errors similar
+to that used in Schaul et al. (2021). Specifically, we compute a running estimate of the standard
+deviation of TD-errors of the online network 𝜎
+running
+𝑗
+as well as a batch standard deviation 𝜎
+batch
+𝑗
+, and
+compute 𝜎𝑗 = max(𝜎
+running
+𝑗
+, 𝜎batch
+𝑗
+, 𝜖), where 𝜖 acts as small threshold to avoid amplification of noise
+past a specified scale, which we fix to 0.01 in all our experiments. We then divide the TD-errors
+by 𝜎𝑗 when computing both the loss and priorities. As opposed to Schaul et al. (2021) we compute
+the running statistics on the learner, and make use of importance sampling to correct the sampling
+distribution.
+B2 Cross-mixture training. Agent57 only trains the policy 𝑗 which was used to collect a given
+trajectory, but it is natural to ask whether data-efficiency and robustness may be improved by training
+all policies at once. We propose a training loss 𝐿 according to the following weighting scheme between
+the behavior policy loss and the mean over all losses:
+𝐿 = 𝜂𝐿𝑗𝜇 +
+1 − 𝜂
+𝑁
+𝑁
+∑︁−1
+𝑗=0
+𝐿𝑗 (5)
+where 𝐿𝑗 denotes the Q-learning loss for policy 𝑗, and 𝑗𝜇 denotes the index for the behavior policy
+selected by the meta-controller for the sampled trajectory. We find that an intermediate value for the
+mixture parameter of 𝜂 = 0.5 tends to work well. To achieve better compute-efficiency we choose
+to deviate from the original UVFA architecture which fed a 1-hot encoding of the policy index to
+the LSTM, aand instead modify the Q-value heads to output N sets of Q-values, one for each of the
+6
+Human-level Atari 200x faster
+members in the family of policies introduced in Section 3. Therefore, in the end we output values for
+all combinations of actions and policies (see Figure 2). We note that in this setting, there is also less
+deviation in the recurrent states when learning across different mixture policies.
+C1 Normalizer-free torso network. Normalization layers are a common feature of ResNet architectures, and which are known to aid in training of very deep networks, but preliminary investigation
+revealed that several commonly used normalization layers are in fact detrimental to performance in
+our setting. Instead, we employ a variation of the NFNet architecture (Brock et al., 2021) for our
+policy torso network, which combines a variance-scaling strategy with scaled weight standardization
+and careful initialization to achieve state-of-the-art performance on ImageNet without the need for
+normalization layers. We adopt their use of stochastic depth (Huang et al., 2016) at training-time but
+omit the application of ordinary dropout to fully-connected layers as we did not observe any benefit
+from this form of regularization. Some care is required when using stochastic depth in conjunction
+with multi-step returns, as resampling of the stochastic depth mask at each timestep injects additional
+noise into the bootstrap values, resulting in a higher-variance return estimator. As such, we employ
+a temporally-consistent stochastic depth mask which remains fixed over the length of each training
+trajectory.
+C2 Shared torso with combined loss. Agent57 decomposes the combined Q-function into intrinsic
+and extrinsic components, 𝑄𝑒 and 𝑄𝑖
+, which are represented by separate networks. Such a decomposition prevents the gradients of the decomposed value functions from interfering with each other. This
+interference may occur in environments where the intrinsic reward is poorly aligned with the task
+objective, as defined by the extrinsic reward. However, the choice to use separate separate networks
+comes at an expensive computational cost, and potentially limits sample-efficiency since generic
+low-level features cannot be shared. To alleviate these issues, we introduce a shared torso for the two
+Q-functions while retaining separate heads.
+While the form of the decomposition in Agent57 was chosen so as to ensure convergence to
+the optimal value-function 𝑄
+★
+in the tabular setting, this does not generally hold under function
+approximation. Comparing the combined and decomposed losses we observe a mismatch in the
+gradients due to the absence of cross-terms 𝑄𝑖(𝜃)
+𝜕𝑄𝑒 (𝜃)
+𝜕𝜃 and 𝑄𝑒 (𝜃)
+𝜕𝑄𝑖(𝜃)
+𝜕𝜃 in the decomposed loss:
+𝜕
+𝜕𝜃 h
+1
+2
+(𝑄(𝜃) − 𝐺)
+2
+i
+| {z }
+combined loss
+≠
+𝜕
+𝜕𝜃 h
+1
+2
+(𝑄𝑒 (𝜃) − 𝐺𝑒)
+2 +
+1
+2
+(𝛽𝑄𝑖(𝜃) − 𝛽𝐺𝑖)
+2
+i
+| {z }
+decomposed loss
+(6)
+
+𝑄𝑒 (𝜃) + 𝛽𝑄𝑖(𝜃) − 𝐺
+ 𝜕
+𝜕𝜃
+
+𝑄𝑒 (𝜃) + 𝛽𝑄𝑖(𝜃)
+
+≠
+
+𝑄𝑒 (𝜃) − 𝐺𝑒
+ 𝜕𝑄𝑒 (𝜃)
+𝜕𝜃
++ 𝛽
+2
+
+𝑄𝑖(𝜃) − 𝐺𝑖
+ 𝜕𝑄𝑖(𝜃)
+𝜕𝜃
+(7)
+Since we use a behavior policy induced by the total Q-function 𝑄 = 𝑄𝑒 + 𝛽𝑄𝑖 rather than the individual
+components, theory would suggest to use the combined loss instead. In addition, from a practical
+implementation perspective, this switch to the combined loss greatly simplifies the design choices
+involved in our proposed trust region method described in A1. The penalty paid for this choice
+is that the decomposition of the value function into extrinsic and intrinsic components no longer
+carries a strict semantic meaning. Nevertheless we do still retain an implicit inductive bias induced by
+multiplication of 𝑄𝑖 with the intrinsic reward weight 𝛽
+𝑗
+.
+D Robustifying behavior via policy distillation. Schaul et al. (2022) describe the effect of policy
+churn, whereby the greedy action of value-based RL algorithms may change frequently over consecutive
+parameter updates. This can have a deleterious effect on off-policy correction methods: traces will
+be cut more aggressively than with a stochastic policy, and bootstrap values will change frequently
+which can result in a higher variance return estimator. In addition, our choice of training with
+temporally-consistent stochastic depth masks can be interpreted as learning an implicit ensemble
+7
+Human-level Atari 200x faster
+of Q-functions; thus it is natural to ask whether we may see additional benefit from leveraging the
+policy induced by this ensemble.
+We propose to train an explicit policy head 𝜋dist (see Figure 2) via policy distillation to match the
+𝜖-greedy policy induced by the Q-function. In expectation over multiple gradient steps this should
+help to smooth out the policy over time, as well as over the ensemble, while being much faster to
+evaluate than the individual members of the ensemble. Similarly to the trust-region described in A1,
+we mask the policy distillation loss at any timestep where a KL constraint 𝐶KL is violated:
+𝐿𝜋 = −
+∑︁
+𝑎,𝑡
+G𝜖
