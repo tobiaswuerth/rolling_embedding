@@ -1,8 +1,6 @@
 ipykernel
-ipywidgets
-torch
-transformers
-gritlm
-nltk
 tqdm
 matplotlib
+ollama
+scipy
+scikit-learn
