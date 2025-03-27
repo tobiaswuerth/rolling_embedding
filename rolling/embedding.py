@@ -17,11 +17,12 @@ def create_corpus_from_text(file, n=512):
     with open(file, "r", encoding="UTF-8") as f:
         text += f.read()
 
-    return Corpus(text, n)
+    return Corpus(file, text, n)
 
 
 class Corpus:
-    def __init__(self, text, n=512):
+    def __init__(self, title:str, text:str, n=512):
+        self.title = title
         self.text = text
 
         self.parts = [text[i : i + n] for i in range(0, len(text), n)]

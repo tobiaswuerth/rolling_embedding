@@ -1,2 +1,4 @@
 .venv/
 .vscode/
+arxiv_downloads/**
+**/__pycache__/**

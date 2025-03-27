@@ -4,3 +4,7 @@ matplotlib
 ollama
 scipy
 scikit-learn
+arxiv
+pypdf
+umap-learn
+mplcursors
