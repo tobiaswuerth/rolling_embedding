@@ -8,3 +8,4 @@ arxiv
 pypdf
 umap-learn
 mplcursors
+nltk
