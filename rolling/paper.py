@@ -1,7 +1,7 @@
 import regex as re
 import pickle
-import nltk
-from nltk.tokenize import sent_tokenize
+# import nltk
+# from nltk.tokenize import sent_tokenize
 from dataclasses import dataclass
 
 from .embedding import get_embedding
@@ -10,34 +10,37 @@ from .embedding import get_embedding
 @dataclass
 class Paper:
     title: str
-    root: 'PaperNode'
+    text: str
+    nodes: list['PaperNode']
 
     @property
     def embeddings(self) -> list[float]:
-        def get_embeddings(node: 'PaperNode'):
-            if node.children is None:
-                return [node.embedding]
-            
-            embeddings = [node.embedding]
-            for child in node.children:
-                embeddings.extend(get_embeddings(child))
-            return embeddings
+        def _get_embeddings(node: PaperNode) -> list[float]:
+            embs = [node.embedding]
+            if node.children:
+                for child in node.children:
+                    embs.extend(_get_embeddings(child))
+            return embs
 
-        return get_embeddings(self.root)
+        embs = []
+        for node in self.nodes:
+            embs.extend(_get_embeddings(node))
+        return embs
     
     @property
     def texts(self) -> str:
-        def get_texts(node: 'PaperNode'):
-            if node.children is None:
-                return [node.text]
-            
+        def _get_texts(node: PaperNode) -> str:
             texts = [node.text]
-            for child in node.children:
-                texts.extend(get_texts(child))
+            if node.children:
+                for child in node.children:
+                    texts.extend(_get_texts(child))
             return texts
 
-        return get_texts(self.root)
-
+        txts = []
+        for node in self.nodes:
+            txts.extend(_get_texts(node))
+        return txts
+    
 
 @dataclass
 class PaperNode:
@@ -46,65 +49,61 @@ class PaperNode:
     children: list['PaperNode'] = None
 
     
-def create_paper(title:str, text:str, min_sentence_length=8, concat_factor=4) -> Paper:
-    nltk.download('punkt', quiet=True, raise_on_error=True)
-    nltk.download('punkt_tab', quiet=True, raise_on_error=True)
-
-    # clean and split text
+def create_paper(title:str, text:str, min_sentence_length=256, max_sentence_length=2048) -> Paper:
     title = re.sub(r'\s+', ' ', title).strip()
     text = re.sub(r'\s+', ' ', text).strip()
-
-    sentences = sent_tokenize(text)
+    # nltk.download('punkt', quiet=True, raise_on_error=True)
+    # nltk.download('punkt_tab', quiet=True, raise_on_error=True)
+    # sentences = sent_tokenize(text)
+    sentences = text.split(' ')
 
     # combine short sentences
     valid_sentences = []
     current_sentence = ''
     for sentence in sentences:
-        if len(sentence) < min_sentence_length:
-            current_sentence += sentence + ' '
-            continue
-
-        valid_sentences.append(current_sentence + sentence)
-        current_sentence = ''
-
+        current_sentence += ' ' + sentence.strip()
+        if len(current_sentence.strip()) >= min_sentence_length:
+            valid_sentences.append(current_sentence.strip())
+            current_sentence = ''
+    if current_sentence:
+        valid_sentences[-1] += ' ' + current_sentence.strip()
+    
     # generate base nodes
     all_nodes = []
     for sent in valid_sentences:
         emb = get_embedding(sent)
         all_nodes.append(PaperNode(text=sent, embedding=emb))
 
-    # combine multiple nodes to create hierarchical structure
-    def combine_nodes(nodes):
-        assert len(nodes) > 1, "Cannot combine a single node"
+    # generate tree layer
+    layer_groups = []
+    current_group = []
+    for node in all_nodes:
+        group_txt_length = sum(len(n.text) for n in current_group)
 
-        splits = []
-        for i in range(0, len(nodes), concat_factor):
-            parts = nodes[i:i + concat_factor]
-            if len(parts) == 1:
-                splits[-1].append(parts[0])
-                continue
-
-            splits.append(parts)
-
-        combined_nodes = []
-        for parts in splits:
-            combined_text = ' '.join([node.text for node in parts])
-            combined_emb = get_embedding(combined_text)
-            combined_node = PaperNode(text=combined_text, embedding=combined_emb, children=parts)
-            combined_nodes.append(combined_node)
-
-        return combined_nodes
-
-    combined_nodes = all_nodes
-    while len(combined_nodes) > 1:
-        combined_nodes = combine_nodes(combined_nodes)
-        all_nodes += combined_nodes
-
-    assert len(combined_nodes) == 1, "Failed to combine nodes into a single node"
-    root = combined_nodes[0]
+        if group_txt_length + len(node.text) > max_sentence_length:
+            if len(current_group) > 0:
+                layer_groups.append(current_group)
+            current_group = [node]
+            continue
+        
+        current_group.append(node)
     
-    paper = Paper(title=title, root=root)
-    return paper
+    if len(current_group) > 0:
+        layer_groups.append(current_group)
+
+    root_nodes = []
+    for group in layer_groups:
+        if len(group) == 1:
+            root_nodes.append(group[0])
+            continue
+
+        group_text = ' '.join([node.text for node in group])
+        group_emb = get_embedding(group_text)
+        root_node = PaperNode(text=group_text, embedding=group_emb, children=group)
+        root_nodes.append(root_node)
+    
+    assert len(root_nodes) > 0, 'No root nodes found.'
+    return Paper(title, text, root_nodes)
 
 
 def print_paper(paper: Paper, indent: int = 2):
@@ -116,7 +115,8 @@ def print_paper(paper: Paper, indent: int = 2):
             for child in node.children:
                 print_node(child, level + 1)
 
-    print_node(paper.root)
+    for node in paper.nodes:
+        print_node(node, 1)
 
 
 def save_paper(paper: Paper, path: str):

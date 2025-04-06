@@ -1,4 +1,13 @@
 from pypdf import PdfReader
+import os
+
+
+def list_pdfs(directory="./arxiv_downloads"):
+    files = []
+    for file in os.listdir(directory):
+        if file.endswith(".pdf"):
+            files.append(os.path.join(directory, file))
+    return files
 
 
 def read_pdf(file_path):
