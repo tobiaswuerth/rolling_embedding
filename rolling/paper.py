@@ -12,6 +12,32 @@ class Paper:
     title: str
     root: 'PaperNode'
 
+    @property
+    def embeddings(self) -> list[float]:
+        def get_embeddings(node: 'PaperNode'):
+            if node.children is None:
+                return [node.embedding]
+            
+            embeddings = [node.embedding]
+            for child in node.children:
+                embeddings.extend(get_embeddings(child))
+            return embeddings
+
+        return get_embeddings(self.root)
+    
+    @property
+    def texts(self) -> str:
+        def get_texts(node: 'PaperNode'):
+            if node.children is None:
+                return [node.text]
+            
+            texts = [node.text]
+            for child in node.children:
+                texts.extend(get_texts(child))
+            return texts
+
+        return get_texts(self.root)
+
 
 @dataclass
 class PaperNode:
