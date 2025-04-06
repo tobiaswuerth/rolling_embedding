@@ -21,8 +21,8 @@ class PaperNode:
 
     
 def create_paper(title:str, text:str, min_sentence_length=8, concat_factor=4) -> Paper:
-    nltk.download('punkt')
-    nltk.download('punkt_tab')
+    nltk.download('punkt', quiet=True, raise_on_error=True)
+    nltk.download('punkt_tab', quiet=True, raise_on_error=True)
 
     # clean and split text
     title = re.sub(r'\s+', ' ', title).strip()

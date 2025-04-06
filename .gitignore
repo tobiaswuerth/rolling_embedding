@@ -1,4 +1,5 @@
 .venv/
 .vscode/
 arxiv_downloads/**
+arxiv_downloads_processed/**
 **/__pycache__/**
