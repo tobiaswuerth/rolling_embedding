@@ -1,4 +1,5 @@
 ipykernel
+ipywidgets
 tqdm
 matplotlib
 ollama
@@ -9,3 +10,8 @@ pypdf
 umap-learn
 mplcursors
 nltk
+torch
+torchvision
+torchaudio
+transformers
+accelerate
