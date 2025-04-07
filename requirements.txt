@@ -2,16 +2,17 @@ ipykernel
 ipywidgets
 tqdm
 matplotlib
-ollama
+mplcursors
 scipy
 scikit-learn
+umap-learn
 arxiv
 pypdf
-umap-learn
-mplcursors
+ollama
 nltk
+transformers
+accelerate
 torch
 torchvision
 torchaudio
-transformers
-accelerate
+# pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126

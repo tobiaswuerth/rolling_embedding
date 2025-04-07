@@ -23,7 +23,7 @@ class GTEEmbeddingModel(torch.nn.Module):
         self.max_size = self.model.config.max_position_embeddings
 
     @torch.no_grad()
-    def encode(self, texts: list[str], batch_size: int = 64):
+    def encode(self, texts: list[str], batch_size: int = 48):
         if isinstance(texts, str):
             texts = [texts]
 

@@ -15,6 +15,9 @@ class Paper:
     @property
     def text_segments(self) -> list[str]:
         return [self.text[s[0] : s[1]] for s in self.text_segment_slices]
+    
+    def __repr__(self):
+        return f'Paper({self.embedding[:5]} {self.title})'
 
 
 def create_paper(
@@ -54,12 +57,14 @@ def create_paper(
 
         # adjust indecies to not cut words
         for ifrom, ito in indecies:
-            if ifrom > 0 and text[ifrom] != " ":
-                while ifrom > 0 and text[ifrom] != " ":
-                    ifrom -= 1
-            if ito < max_idx and text[ito] != " ":
-                while ito < max_idx and text[ito] != " ":
-                    ito += 1
+            while ifrom > 0 and text[ifrom] != " ":
+                ifrom -= 1
+            if text[ifrom] == " ":
+                # this is to not get pre-leading empty space
+                ifrom += 1 
+
+            while ito < max_idx and text[ito] != " ":
+                ito += 1
             segment_slices.append((ifrom, ito))
 
     segment_slices = np.array(segment_slices, dtype=np.uint32)

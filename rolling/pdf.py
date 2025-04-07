@@ -10,6 +10,14 @@ def list_pdfs(directory="./arxiv_downloads"):
     return files
 
 
+def list_pdfs_processed(directory="./arxiv_downloads_processed"):
+    files = []
+    for file in os.listdir(directory):
+        if file.endswith(".pkl"):
+            files.append(os.path.join(directory, file))
+    return files
+
+
 def read_pdf(file_path):
     reader = PdfReader(file_path)
 
