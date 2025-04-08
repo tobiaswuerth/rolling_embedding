@@ -16,3 +16,13 @@ source .venv/bin/activate
 pip3 install -r requirements.txt
 ```
 ---
+
+# Run Web-Frontend
+```bash
+cd .\web_frontend\
+npm install
+npm audit fix --force
+npm run dev
+```
+
+This should open locally on http://localhost:3000/
