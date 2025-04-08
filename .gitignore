@@ -1,5 +1,7 @@
 .venv/
 .vscode/
-arxiv_downloads/**
-arxiv_downloads_processed/**
+arxiv_downloads
+arxiv_downloads_processed
+arxiv_metadata
 **/__pycache__/**
+elastic-start-local

@@ -8,3 +8,11 @@ chmod +x .venv/bin/activate
 source .venv/bin/activate
 pip3 install -r requirements.txt
 ```
+---
+
+I explore different approaches.
+1. downloading PDFs from arXiv archive to perform full text analysis
+2. download only arXiv metadata and use title+abstract to analyse
+
+I locally setup a Elastic search database to persist the processed metadata (2.7mio records atm, ~4.5GB)
+
