@@ -24,15 +24,16 @@ import { useRoute } from 'vue-router';
 
 const route = useRoute();
 const initialPaperId = route.params.id;
+const papers = new Map();
 
 const currentPaperId = ref(initialPaperId);
 const isLoading = ref(false);
 const errorLoading = ref(false);
+const queries = new Map();
 
 const graphContainer = ref(null);
 let graphContent = null; // Container for zooming and panning
 let simulation = null;
-const papers = new Map();
 const links = new Set();
 const d3_nodes = ref([]);
 const d3_links = ref([]);
@@ -220,10 +221,18 @@ async function loadData(id) {
   errorLoading.value = false;
 
   try {
+    if (!queries.has(id)) {
+      queries.set(id, 1)
+    }
+
+    const page = queries.get(id)
     const response = await fetch('http://localhost:3001/search_by_paper_id', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paper_id: id }),
+      body: JSON.stringify({
+        paper_id: id,
+        page: page,
+      }),
     });
 
     if (!response.ok) {
@@ -232,6 +241,7 @@ async function loadData(id) {
 
     const result = await response.json();
     console.log('API Result:', result);
+    queries.set(id, page + 1)
 
     addResultData(result);
     renderGraph();

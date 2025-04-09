@@ -76,38 +76,51 @@ def search_by_paper_id():
         if not paper_id:
             return jsonify({"error": "Paper ID not provided"}), 400
 
-        # Step 1: Fetch the paper's embedding using the paper_id
+        # 1. get paper by id
         response = client.get(index="arxiv", id=paper_id)
-        if not response.get("_source"):
+        paper = response.get("_source", None)
+        if not paper:
             return jsonify({"error": "Paper not found"}), 404
 
-        paper = response["_source"]
         emb = paper.get("embedding")
 
-        if not emb:
-            return jsonify({"error": "Embedding not found for the given paper"}), 400
+        # 2. calc pagination
+        # note, since we use KNN afterwards pagination technically doesn't work because you cannot skip before you cluster
+        # nevertheless, one might want to fetch more later on in the process, therefor requiring re-execution - suboptimal, I know
+        page = request.json.get("page", 1)
+        page_size = 10
+        from_value = (page - 1) * page_size
 
-        # Step 2: Search for similar papers using KNN based on the embedding
+        # 3. find similar papers by KNN on embedding
         knn_response = client.search(
             index="arxiv",
             query={
-                "knn": {
-                    "field": "embedding",
-                    "query_vector": emb,
-                    "k": 11,
+                "bool": {
+                    "must": [
+                        {
+                            "knn": {
+                                "field": "embedding",
+                                "query_vector": emb,
+                                "k": (page * page_size) + 1,  # +1 because self is excluded afterwards
+                            }
+                        }
+                    ],
+                    "must_not": [
+                        {
+                            "term": {
+                                "_id": paper_id,
+                            },
+                        },
+                    ],
                 }
             },
+            from_=from_value,
+            size=page_size,
         )
 
         matches = knn_response["hits"]["hits"]
-        matches = [
-            r for r in matches
-            if r['_id'] != paper_id
-        ]
-        results = {
-            'paper': paper,
-            'matches': matches
-        }
+
+        results = {"paper": paper, "matches": matches}
         return jsonify(results)
 
     except Exception as e:
