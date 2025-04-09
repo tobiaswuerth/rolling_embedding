@@ -65,30 +65,79 @@ function drag(sim) {
 }
 
 function renderGraph() {
+  const min_weight = Math.min.apply(Math, d3_links.value.map(x => x.weight))
+  const max_weight = Math.max.apply(Math, d3_links.value.map(x => x.weight))
+
+  const strokeWidthScale = d3.scaleLinear()
+    .domain([min_weight, max_weight])
+    .range([1, 15])
+    .clamp(true);
+  const opacityScale = d3.scaleLinear()
+    .domain([min_weight, max_weight])
+    .range([0.5, 0.8])
+    .clamp(true);
+  const connectionScale = d3.scaleLinear()
+    .domain([1, 30])
+    .range([8, 24])
+    .clamp(true);
+  const colorScale = d3.scaleLinear()
+    .domain([1, 10])
+    .range([0, 359]) // H in HSL
+    .clamp(true);
+
   const link = linkGroup
-    .selectAll('line')
+    .selectAll('link')
     .data(d3_links.value, d => `${d.source.id}-${d.target.id}`)
     .join(
-      enter => enter.append('line')
-        .attr('stroke', '#aaa')
-        .attr('stroke-opacity', 0.6)
-        .attr('stroke-width', d => Math.sqrt(d.weight * 5)),
+      enter => {
+        const g = enter.append('g').attr('class', 'link')
+
+        g.append('line')
+          .attr('stroke', '#aaa')
+          .attr('stroke-opacity', d => opacityScale(d.weight))
+          .attr('stroke-width', d => strokeWidthScale(d.weight));
+
+        g.append('text')
+          .text(d => d.weight)
+          .attr('fill', 'white')
+          .attr('font-size', 15)
+          .style('pointer-events', 'none')
+          .style('visibility', 'hidden');
+
+        g.on('mouseover', (event, d) => {
+          d3.select(event.currentTarget)
+            .select('text')
+            .attr('x', d => (d.source.x + d.target.x) / 2)
+            .attr('y', d => (d.source.y + d.target.y) / 2)
+            .style('visibility', 'visible');
+        }).on('mouseout', (event, d) => {
+          d3.select(event.currentTarget)
+            .select('text')
+            .style('visibility', 'hidden');
+        });
+
+        return g
+      },
       update => update,
       exit => exit.remove()
     );
 
+  function getConnectionCount(d) {
+    return d3_links.value.filter(l => l.source.id === d.id || l.target.id === d.id).length
+  }
   const node = nodeGroup
     .selectAll('g.node')
     .data(d3_nodes.value, d => d.id)
     .join(
       enter => {
+        // new nodes
         const g = enter.append('g').attr('class', 'node');
 
         g.append('circle')
-          .attr('r', d => d.isCenter ? 12 : 8)
-          .attr('fill', d => d.isCenter ? '#1976d2' : '#00bcd4')
+          .attr('r', d => connectionScale(getConnectionCount(d)))
+          .attr('fill', d => d3.hsl(colorScale(queries.get(d.id) || 0), 0.8, 0.5))
           .attr('stroke', '#fff')
-          .attr('stroke-width', 1.5);
+          .attr('stroke-width', 1);
 
         g.append('text')
           .text(d => d.label.length > 20 ? d.label.substring(0, 20) + '...' : d.label)
@@ -100,11 +149,11 @@ function renderGraph() {
           .style('opacity', 0.3);
 
         g.call(drag(simulation));
-
+        
         g.on('mouseover', (event, d) => {
           d3.select(event.currentTarget)
             .select('circle')
-            .attr('r', d.isCenter ? 14 : 10);
+            .attr('r', d => connectionScale(getConnectionCount(d)) + 3)
           d3.select(event.currentTarget)
             .select('text')
             .style('opacity', 1)
@@ -112,14 +161,12 @@ function renderGraph() {
         }).on('mouseout', (event, d) => {
           d3.select(event.currentTarget)
             .select('circle')
-            .attr('r', d.isCenter ? 12 : 8);
+            .attr('r', d => connectionScale(getConnectionCount(d)))
           d3.select(event.currentTarget)
             .select('text')
             .style('opacity', 0.3)
             .text(d => d.label.length > 20 ? d.label.substring(0, 20) + '...' : d.label);
-        });
-
-        g.on('click', async (event, d) => {
+        }).on('click', (event, d) => {
           // Prevent triggering click during drag
           if (event.defaultPrevented) {
             return
@@ -131,10 +178,11 @@ function renderGraph() {
         return g;
       },
       update => {
+        // existing nodes
         update.select('circle')
           .transition().duration(300)
-          .attr('fill', d => d.isCenter ? '#1976d2' : '#00bcd4')
-          .attr('r', d => d.isCenter ? 12 : 8);
+          .attr('fill', d => d3.hsl(colorScale(queries.get(d.id) || 0), 0.8, 0.5))
+          .attr('r', d => connectionScale(getConnectionCount(d)))
         update.select('text')
           .text(d => d.label.length > 20 ? d.label.substring(0, 20) + '...' : d.label);
         return update;
