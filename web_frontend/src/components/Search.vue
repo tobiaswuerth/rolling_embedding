@@ -72,6 +72,7 @@ async function onSearch() {
     }),
   })
   show_loading.value = false;
+  
   if (!response.ok) {
     console.error('Error fetching data:', response.statusText)
     return

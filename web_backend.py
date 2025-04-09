@@ -67,5 +67,53 @@ def search_by_embedding():
         return jsonify({"error": "Error querying Elasticsearch"}), 500
 
 
+@app.route("/search_by_paper_id", methods=["POST"])
+def search_by_paper_id():
+    try:
+        print(f"Received request: {request.json}")
+
+        paper_id = request.json.get("paper_id", "")
+        if not paper_id:
+            return jsonify({"error": "Paper ID not provided"}), 400
+
+        # Step 1: Fetch the paper's embedding using the paper_id
+        response = client.get(index="arxiv", id=paper_id)
+        if not response.get("_source"):
+            return jsonify({"error": "Paper not found"}), 404
+
+        paper = response["_source"]
+        emb = paper.get("embedding")
+
+        if not emb:
+            return jsonify({"error": "Embedding not found for the given paper"}), 400
+
+        # Step 2: Search for similar papers using KNN based on the embedding
+        knn_response = client.search(
+            index="arxiv",
+            query={
+                "knn": {
+                    "field": "embedding",
+                    "query_vector": emb,
+                    "k": 11,
+                }
+            },
+        )
+
+        matches = knn_response["hits"]["hits"]
+        matches = [
+            r for r in matches
+            if r['_id'] != paper_id
+        ]
+        results = {
+            'paper': paper,
+            'matches': matches
+        }
+        return jsonify(results)
+
+    except Exception as e:
+        print(f"Error querying Elasticsearch: {e}")
+        return jsonify({"error": "Error querying Elasticsearch"}), 500
+
+
 if __name__ == "__main__":
     app.run(port=3001, debug=True)
