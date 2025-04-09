@@ -1,19 +1,50 @@
 <template>
-  <v-container class="py-8" fluid>
-    <v-responsive class="mx-auto" max-width="100%">
-      <a href="/">
-        <v-img class="mb-4" height="150" src="@/assets/logo.png" />
-      </a>
+  <v-container fluid>
 
-      <div class="text-center mb-6">
-        <h1 class="text-h2 font-weight-bold">Graph</h1>
-        <p v-if="currentPaperId" class="text-subtitle-1">Displaying connections for Paper ID: {{ currentPaperId }}</p>
-      </div>
+    <v-app-bar>
+      <template v-slot:prepend>
+        <v-btn icon="mdi-home" href="/"></v-btn>
+      </template>
+      <v-app-bar-title>Graph</v-app-bar-title>
+    </v-app-bar>
 
-      <div ref="graphContainer" class="graph-container"></div>
-      <p v-if="isLoading" class="text-center mt-4">Loading graph data...</p>
-      <p v-if="errorLoading" class="text-center mt-4 red--text">Error loading graph data.</p>
-    </v-responsive>
+    <v-row>
+      <v-col cols="3" class="bg-gray">
+        <v-card class="paper-preview" v-if="currentPaper !== null">
+          <v-card-title class="text-h6 font-weight-bold" style="white-space: normal;">
+            {{ currentPaper.title }}
+          </v-card-title>
+          <v-card-subtitle class="d-flex flex-wrap gap-1">
+            <div class="text-caption" style="white-space: normal;">
+              {{ currentPaper.authors }}
+            </div>
+          </v-card-subtitle>
+          <v-card-text class="line-clamp">
+            {{ currentPaper.abstract }}
+          </v-card-text>
+          <v-spacer />
+          <v-card-actions>
+            <v-btn :href="`https://arxiv.org/pdf/${currentPaper.id}`" target="_blank" variant="tonal" density="compact"
+              prepend-icon="mdi-file-pdf-box">
+              View PDF
+            </v-btn>
+            <v-btn :href="`/graph/${currentPaper.id}`" variant="tonal" density="compact" prepend-icon="mdi-graph">
+              Graph
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+        <i v-if="currentPaper === null">
+          Hover over node to preview
+        </i>
+      </v-col>
+      <v-col cols="9" class="bg-gray">
+        <div ref="graphContainer" class="graph-container"></div>
+      </v-col>
+    </v-row>
+
+
+    <p v-if="isLoading" class="text-center mt-4">Loading graph data...</p>
+    <p v-if="errorLoading" class="text-center mt-4 red--text">Error loading graph data.</p>
   </v-container>
 </template>
 
@@ -26,7 +57,7 @@ const route = useRoute();
 const initialPaperId = route.params.id;
 const papers = new Map();
 
-const currentPaperId = ref(initialPaperId);
+const currentPaper = ref(null);
 const isLoading = ref(false);
 const errorLoading = ref(false);
 const queries = new Map();
@@ -149,8 +180,9 @@ function renderGraph() {
           .style('opacity', 0.3);
 
         g.call(drag(simulation));
-        
+
         g.on('mouseover', (event, d) => {
+          currentPaper.value = papers.get(d.id)
           d3.select(event.currentTarget)
             .select('circle')
             .attr('r', d => connectionScale(getConnectionCount(d)) + 3)
@@ -312,8 +344,7 @@ onMounted(async () => {
     .append('svg')
     .attr('width', '100%')
     .attr('height', '100%')
-    .attr('viewBox', `0 0 ${width} ${height}`)
-    .style('background-color', '#1d1d1d');
+    .attr('viewBox', `0 0 ${width} ${height}`);
 
   graphContent = svg.append('g');
   linkGroup = graphContent.append('g')
@@ -357,11 +388,27 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.graph-container {
-  height: 600px;
-  width: 100%;
+.bg-gray {
   border: 1px solid #444;
   border-radius: 8px;
+  background-color: #1d1d1d;
+  height: calc(100vh - 115px);
+  max-height: 100%;
+}
+
+.graph-container {
+  height: 100%;
   overflow: hidden;
+}
+
+.paper-preview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.line-clamp {
+  flex-grow: 1;
+  overflow-y: auto;
 }
 </style>

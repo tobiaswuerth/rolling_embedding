@@ -8,7 +8,6 @@
       </div>
 
       <v-row>
-
         <v-col cols="9">
           <v-text-field v-model="search" label="What are you looking for?" prepend-inner-icon="mdi-magnify"
             variant="outlined" rounded="lg" clearable hide-details @keydown.enter="onSearch" :loading="show_loading" />
