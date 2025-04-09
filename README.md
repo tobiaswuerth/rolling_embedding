@@ -26,6 +26,7 @@ I explore different approaches.
 Once I have processed data (Text + Embeddings) I can start comparing and plotting those embeddings to see which texts are similar.
 
 For example, in [playground_4a_comparison.ipynb](playground_4a_comparison.ipynb) I calculate 1 embedding representing the whole paper content and use this for plotting.
+
 ![3d_plot](./assets/3d_plot.gif)
 
 In [playground_4b_similarity_search.ipynb](playground_4b_similarity_search.ipynb) I used this search papers matching my query.
@@ -36,11 +37,13 @@ All the experiments worked more or less good but I felt like to actually get the
 2. need a better way to interact with it to make it
 
 I ended up with the following setup:
+
 ![component architecture](./assets/diagram.drawio.png)
 
 This allows me to build an app using the full capabilities of HTML and JavaScript and utilize powerful functions in the [Python backend](web_backend.py).
 
 To start, I implemented `match_phrase` (search by text) and `KNN query by vector` (search by embedding) search capabilities:
+
 ![frontend showcase](./assets/frontend_showcase.gif)
 
 I have plans to build upon this and add more novel functionality to explore the arXiv papers.
@@ -76,5 +79,3 @@ and to build a distributable
 ```bash
 npm run build
 ```
-
----
