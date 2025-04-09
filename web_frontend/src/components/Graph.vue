@@ -25,11 +25,12 @@ import { useRoute } from 'vue-router';
 const route = useRoute();
 const initialPaperId = route.params.id;
 
-const currentPaperId = ref(null);
+const currentPaperId = ref(initialPaperId);
 const isLoading = ref(false);
 const errorLoading = ref(false);
 
 const graphContainer = ref(null);
+let graphContent = null; // Container for zooming and panning
 let simulation = null;
 const papers = new Map();
 const links = new Set();
@@ -256,8 +257,11 @@ onMounted(async () => {
     .attr('viewBox', `0 0 ${width} ${height}`)
     .style('background-color', '#1d1d1d');
 
-  linkGroup = svg.append('g').attr('class', 'links'); // for selection, not styling
-  nodeGroup = svg.append('g').attr('class', 'nodes');
+  graphContent = svg.append('g');
+  linkGroup = graphContent.append('g')
+    .attr('class', 'links'); // for selection, not styling
+  nodeGroup = graphContent.append('g')
+    .attr('class', 'nodes');
 
   simulation = d3.forceSimulation()
     .nodes(d3_nodes.value)
@@ -266,6 +270,14 @@ onMounted(async () => {
     .force('center', d3.forceCenter(width / 2, height / 2))
     .force('collide', d3.forceCollide().radius(d => (d.isCenter ? 15 : 10)).strength(0.7))
     .on('tick', ticked);
+
+  const zoom = d3.zoom()
+    .scaleExtent([0.1, 3])
+    .on('zoom', (event) => {
+      graphContent.attr('transform', event.transform);
+    });
+
+  svg.call(zoom);
 
   await loadData(initialPaperId)
 
@@ -283,9 +295,7 @@ onMounted(async () => {
   if (graphContainer.value) {
     resizeObserver.observe(graphContainer.value);
   }
-
 });
-
 </script>
 
 <style scoped>
@@ -294,5 +304,6 @@ onMounted(async () => {
   width: 100%;
   border: 1px solid #444;
   border-radius: 8px;
+  overflow: hidden;
 }
 </style>
