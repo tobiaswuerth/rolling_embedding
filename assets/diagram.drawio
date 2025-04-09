@@ -1,0 +1,92 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" version="26.2.9">
+  <diagram id="Ht1M8jgEwFfnCIfOTk4-" name="Page-1">
+    <mxGraphModel dx="1176" dy="650" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=light-dark(#000000,#1A1A1A);" edge="1" parent="1" source="_Ci42HP4MkFcC_zhv7Co-5" target="_Ci42HP4MkFcC_zhv7Co-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-5" value="arXiv / kaggle&lt;div&gt;metadata.json&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="80" y="60" width="160" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=light-dark(#000000,#1A1A1A);" edge="1" parent="1" source="_Ci42HP4MkFcC_zhv7Co-6" target="_Ci42HP4MkFcC_zhv7Co-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-6" value="download" style="whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="280" y="85" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-8" value="process in Python&lt;div&gt;playground_5_elastic_metadata.ipynb&lt;/div&gt;" style="whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="400" y="70" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-10" value="local Elastic Search DB&lt;div&gt;http://localhost:9200/&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="440" y="180" width="160" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-12" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=light-dark(#000000,#1A1A1A);" edge="1" parent="1" source="_Ci42HP4MkFcC_zhv7Co-8" target="_Ci42HP4MkFcC_zhv7Co-10">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="600" y="250" as="sourcePoint" />
+            <mxPoint x="650" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-36" value="store" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="_Ci42HP4MkFcC_zhv7Co-12">
+          <mxGeometry x="0.0286" y="1" relative="1" as="geometry">
+            <mxPoint x="-1" y="-3" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-16" value="&lt;div&gt;web_frontend&lt;/div&gt;&lt;div&gt;HTML / vue.js&lt;/div&gt;http://localhost:3000/" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=#82b366;fillColor=#d5e8d4;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;shape=mxgraph.vvd.web_browser;" vertex="1" parent="1">
+          <mxGeometry x="93.23" y="287" width="126.77" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-19" value="web_backend&lt;div&gt;Python / Flask&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent;&quot;&gt;http://localhost:3001/&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=process;whiteSpace=wrap;rounded=1;size=0.14;arcSize=6;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="440" y="312" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-21" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=light-dark(#000000,#1A1A1A);" edge="1" parent="1" source="_Ci42HP4MkFcC_zhv7Co-19" target="_Ci42HP4MkFcC_zhv7Co-10">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="570" y="337" as="sourcePoint" />
+            <mxPoint x="643" y="337" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-32" value="3. search by embedding" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="_Ci42HP4MkFcC_zhv7Co-21">
+          <mxGeometry x="-0.1744" y="-2" relative="1" as="geometry">
+            <mxPoint y="-5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-22" value="&lt;div&gt;&lt;font style=&quot;color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;local AI&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;embedding Model&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Alibaba-NLP/gte-multilingual-base&lt;/font&gt;&lt;/div&gt;" style="sketch=0;outlineConnect=0;fillColor=#d5e8d4;strokeColor=#82b366;dashed=0;verticalLabelPosition=middle;verticalAlign=middle;align=left;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.sagemaker_model;labelPosition=right;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="750" y="190" width="60" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-23" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;strokeColor=light-dark(#000000,#1A1A1A);" edge="1" parent="1" source="_Ci42HP4MkFcC_zhv7Co-19" target="_Ci42HP4MkFcC_zhv7Co-22">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="480" y="449" as="sourcePoint" />
+            <mxPoint x="528" y="412" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-26" value="&lt;span&gt;2. generate query&amp;nbsp;&lt;/span&gt;&lt;div&gt;&lt;span&gt;embedding&lt;/span&gt;&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="_Ci42HP4MkFcC_zhv7Co-23">
+          <mxGeometry x="-0.5365" y="-2" relative="1" as="geometry">
+            <mxPoint x="54" y="-32" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-30" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=light-dark(#000000,#1A1A1A);" edge="1" parent="1" source="_Ci42HP4MkFcC_zhv7Co-16" target="_Ci42HP4MkFcC_zhv7Co-19">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="487" as="sourcePoint" />
+            <mxPoint x="440" y="437" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-31" value="1. query REST API&lt;div&gt;4.&amp;nbsp;&lt;span style=&quot;background-color: light-dark(#ffffff, var(--ge-dark-color, #121212)); color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;response with matches&lt;/span&gt;&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="_Ci42HP4MkFcC_zhv7Co-30">
+          <mxGeometry x="-0.5333" y="-1" relative="1" as="geometry">
+            <mxPoint x="49" y="19" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-33" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;strokeColor=light-dark(#000000,#1A1A1A);" edge="1" parent="1" source="_Ci42HP4MkFcC_zhv7Co-8" target="_Ci42HP4MkFcC_zhv7Co-22">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="700" y="150" as="sourcePoint" />
+            <mxPoint x="860" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_Ci42HP4MkFcC_zhv7Co-35" value="&lt;span style=&quot;background-color: light-dark(rgb(255, 255, 255), transparent);&quot;&gt;generate PDF&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;background-color: light-dark(rgb(255, 255, 255), transparent);&quot;&gt;Title + Abstract&lt;br&gt;&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;background-color: light-dark(rgb(255, 255, 255), transparent);&quot;&gt;embedding&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="_Ci42HP4MkFcC_zhv7Co-33">
+          <mxGeometry x="-0.0693" y="-1" relative="1" as="geometry">
+            <mxPoint x="9" y="5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
