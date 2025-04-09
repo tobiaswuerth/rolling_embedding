@@ -1,20 +1,39 @@
-/**
- * main.js
- *
- * Bootstraps Vuetify and other plugins then mounts the App`
- */
-
-// Plugins
-import { registerPlugins } from '@/plugins'
-
-// Components
-import App from './App.vue'
-
-// Composables
 import { createApp } from 'vue'
-
+import App from './App.vue'
 const app = createApp(App)
 
-registerPlugins(app)
+// vuetify
+import '@mdi/font/css/materialdesignicons.css'
+import 'vuetify/styles'
+import { createVuetify } from 'vuetify'
 
+app.use(createVuetify({
+    theme: {
+        defaultTheme: 'dark',
+    },
+}))
+
+// router
+import { createRouter, createWebHistory } from 'vue-router'
+import SearchView from './components/Search.vue'
+import GraphView from './components/Graph.vue'
+
+const routes = [
+    {
+        path: '/',
+        component: SearchView
+    },
+    {
+        path: '/graph/:id',
+        component: GraphView
+    },
+]
+
+app.use(createRouter({
+    history: createWebHistory(),
+    routes,
+}))
+
+
+// finalize
 app.mount('#app')
