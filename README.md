@@ -34,7 +34,7 @@ In [playground_4b_similarity_search.ipynb](playground_4b_similarity_search.ipynb
 ## Building an App
 All the experiments worked more or less good but I felt like to actually get the best results I
 1. need way more data, and
-2. need a better way to interact with it to make it
+2. need a better way to interact with it
 
 I ended up with the following setup:
 
