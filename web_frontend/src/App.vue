@@ -8,6 +8,8 @@
   </v-app>
 </template>
 
-<script setup>
-
-</script>
+<style>
+html {
+  overflow: auto !important;
+}
+</style>
