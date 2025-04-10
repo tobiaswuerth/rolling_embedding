@@ -1,6 +1,7 @@
 <template>
   <v-container fluid>
 
+    <!-- Header  -->
     <v-app-bar>
       <template v-slot:prepend>
         <v-btn icon="mdi-home" href="/"></v-btn>
@@ -10,6 +11,8 @@
 
     <v-row>
       <v-col cols="3" class="bg-gray">
+
+        <!-- Paper Preview -->
         <v-card class="paper-preview" v-if="currentPaper !== null">
           <v-card-title class="text-h6 font-weight-bold" style="white-space: normal;">
             {{ currentPaper.title }}
@@ -38,6 +41,17 @@
         </i>
       </v-col>
       <v-col cols="9" class="bg-gray">
+
+        <!-- Graph Config -->
+        <div class="graph-config">
+          <div class="graph-config-row" v-for="item in configItems" :key="item.label">
+            <div class="label text-caption">{{ item.label }}</div>
+            <v-slider v-model="item.model.value" :min="item.min" :max="item.max" :step="item.step" hide-details
+              class="flex-grow-1" thumb-label density="compact" />
+          </div>
+        </div>
+
+        <!-- Graph SVG -->
         <div ref="graphContainer" class="graph-container"></div>
       </v-col>
     </v-row>
@@ -50,7 +64,7 @@
 
 <script setup>
 import * as d3 from 'd3';
-import { onMounted, ref, nextTick } from 'vue';
+import { onMounted, ref, nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
@@ -71,6 +85,24 @@ const d3_links = ref([]);
 let svg = null;
 let linkGroup = null;
 let nodeGroup = null;
+
+const linkStiffness = ref(0.3)
+const linkAttraction = ref(-250)
+const configItems = [
+  { label: 'Link Stiffness', model: linkStiffness, min: 0.1, max: 1.0, step: 0.1 },
+  { label: 'Link Attraction', model: linkAttraction, min: -500, max: 0, step: 10 },
+];
+
+
+watch([linkStiffness, linkAttraction], () => {
+  if (!simulation) {
+    return;
+  }
+
+  simulation.force('link').strength(linkStiffness.value);
+  simulation.force('charge').strength(linkAttraction.value);
+  simulation.alpha(1).restart();
+});
 
 
 function drag(sim) {
@@ -114,6 +146,10 @@ function renderGraph() {
   const colorScale = d3.scaleLinear()
     .domain([1, 10])
     .range([0, 359]) // H in HSL
+    .clamp(true);
+  const linkLengthScale = d3.scaleLinear()
+    .domain([1, 50])
+    .range([10, 500])
     .clamp(true);
 
   const link = linkGroup
@@ -173,7 +209,7 @@ function renderGraph() {
         g.append('text')
           .text(d => d.label.length > 20 ? d.label.substring(0, 20) + '...' : d.label)
           .attr('x', 15)
-          .attr('y', 4)
+          .attr('y', 5)
           .attr('fill', 'white')
           .attr('font-size', 15)
           .style('pointer-events', 'none')
@@ -225,8 +261,14 @@ function renderGraph() {
     );
 
   simulation.nodes(d3_nodes.value);
-  simulation.force('link').links(d3_links.value);
-  simulation.alpha(1).restart();
+  simulation.force('link')
+    .links(d3_links.value)
+    .distance(d => {
+      const c1 = getConnectionCount(d.source)
+      const c2 = getConnectionCount(d.target)
+      return linkLengthScale(Math.min(c1, c2))
+    });
+  simulation.alpha(0.01).restart(); // todo
 }
 
 function ticked() {
@@ -240,7 +282,7 @@ function ticked() {
     .attr('transform', d => `translate(${d.x},${d.y})`);
 }
 
-function createNode(paper) {
+function createNode(paper, refNode = null) {
   if (papers.has(paper.id)) {
     return d3_nodes.value.find(n => n.id === paper.id)
   }
@@ -250,6 +292,10 @@ function createNode(paper) {
     id: paper.id,
     label: paper.title || `Paper ${paper.id}`,
     isCenter: paper.id === initialPaperId,
+    x: refNode?.x || 0,
+    y: refNode?.y || 0,
+    vx: 0,
+    vy: 0,
   };
   d3_nodes.value.push(newNode);
   return newNode
@@ -286,7 +332,7 @@ function addResultData(results) {
   const nodeMain = createNode(_paper);
 
   _matches.forEach(match => {
-    const nodeOther = createNode(match._source);
+    const nodeOther = createNode(match._source, nodeMain);
     createLink(nodeMain, nodeOther, match._score);
   });
 }
@@ -354,10 +400,16 @@ onMounted(async () => {
 
   simulation = d3.forceSimulation()
     .nodes(d3_nodes.value)
-    .force('link', d3.forceLink(d3_links.value).id(d => d.id).distance(80).strength(0.5))
-    .force('charge', d3.forceManyBody().strength(-250))
+    .force('link', d3.forceLink(d3_links.value)
+      .id(d => d.id)
+      .distance(10)
+      .strength(linkStiffness.value))
+    .force('charge', d3.forceManyBody()
+      .strength(linkAttraction.value))
     .force('center', d3.forceCenter(width / 2, height / 2))
-    .force('collide', d3.forceCollide().radius(d => (d.isCenter ? 15 : 10)).strength(0.7))
+    .force('collide', d3.forceCollide()
+      .radius(d => (d.isCenter ? 15 : 10))
+      .strength(0.8))
     .on('tick', ticked);
 
   const zoom = d3.zoom()
@@ -388,6 +440,24 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.graph-config {
+  position: absolute;
+  width: 400px;
+  background-color: #2d2c2c;
+  border-radius: 8px;
+  padding: 5px 15px;
+}
+
+.graph-config-row {
+  display: flex;
+  align-items: center;
+}
+
+.graph-config-row .label {
+  width: 120px;
+  margin-right: 10px;
+}
+
 .bg-gray {
   border: 1px solid #444;
   border-radius: 8px;
