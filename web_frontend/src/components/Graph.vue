@@ -40,7 +40,14 @@
           Hover over node to preview
         </i>
       </v-col>
+
       <v-col cols="9" class="bg-gray">
+        <div class="status-overlay" v-if="statusMessage">
+          <div class="overlay-content">
+            <div>{{ statusMessage }}</div>
+            <v-btn :onclick="clearStatus" v-if="statusShowClose" variant="tonal" prepend-icon="mdi-close">Close</v-btn>
+          </div>
+        </div>
 
         <!-- Graph Config -->
         <div class="graph-config">
@@ -57,8 +64,6 @@
     </v-row>
 
 
-    <p v-if="isLoading" class="text-center mt-4">Loading graph data...</p>
-    <p v-if="errorLoading" class="text-center mt-4 red--text">Error loading graph data.</p>
   </v-container>
 </template>
 
@@ -70,11 +75,11 @@ import { useRoute } from 'vue-router';
 const route = useRoute();
 const initialPaperId = route.params.id;
 const papers = new Map();
-
 const currentPaper = ref(null);
-const isLoading = ref(false);
-const errorLoading = ref(false);
 const queries = new Map();
+
+const statusMessage = ref("");
+const statusShowClose = ref(false);
 
 const graphContainer = ref(null);
 let graphContent = null; // Container for zooming and panning
@@ -86,13 +91,25 @@ let svg = null;
 let linkGroup = null;
 let nodeGroup = null;
 
-const linkStiffness = ref(0.3)
-const linkAttraction = ref(-250)
+const linkStiffness = ref(0.3);
+const linkAttraction = ref(-250);
 const configItems = [
   { label: 'Link Stiffness', model: linkStiffness, min: 0.1, max: 1.0, step: 0.1 },
   { label: 'Link Attraction', model: linkAttraction, min: -500, max: 0, step: 10 },
 ];
 
+function clearStatus() {
+  statusMessage.value = "";
+  statusShowClose.value = false;
+}
+function showErrorStatus(msg = "Error", error_obj = null) {
+  console.error(msg, error_obj);
+  if (error_obj) {
+    msg += `: ${error_obj}`;
+  }
+  statusMessage.value = msg;
+  statusShowClose.value = true;
+}
 
 watch([linkStiffness, linkAttraction], () => {
   if (!simulation) {
@@ -104,6 +121,9 @@ watch([linkStiffness, linkAttraction], () => {
   simulation.alpha(1).restart();
 });
 
+function getConnectionCount(d) {
+  return d3_links.value.filter(l => l.source.id === d.id || l.target.id === d.id).length
+}
 
 function drag(sim) {
   return d3.drag()
@@ -131,26 +151,11 @@ function renderGraph() {
   const min_weight = Math.min.apply(Math, d3_links.value.map(x => x.weight))
   const max_weight = Math.max.apply(Math, d3_links.value.map(x => x.weight))
 
-  const strokeWidthScale = d3.scaleLinear()
-    .domain([min_weight, max_weight])
-    .range([1, 15])
-    .clamp(true);
-  const opacityScale = d3.scaleLinear()
-    .domain([min_weight, max_weight])
-    .range([0.5, 0.8])
-    .clamp(true);
-  const connectionScale = d3.scaleLinear()
-    .domain([1, 30])
-    .range([8, 24])
-    .clamp(true);
-  const colorScale = d3.scaleLinear()
-    .domain([1, 10])
-    .range([0, 359]) // H in HSL
-    .clamp(true);
-  const linkLengthScale = d3.scaleLinear()
-    .domain([1, 50])
-    .range([10, 500])
-    .clamp(true);
+  const strokeWidthScale = d3.scaleLinear().domain([min_weight, max_weight]).range([1, 15]).clamp(true);
+  const opacityScale = d3.scaleLinear().domain([min_weight, max_weight]).range([0.5, 0.8]).clamp(true);
+  const connectionScale = d3.scaleLinear().domain([1, 30]).range([8, 24]).clamp(true);
+  const colorScale = d3.scaleLinear().domain([1, 10]).range([0, 359]).clamp(true); // H in HSL
+  const linkLengthScale = d3.scaleLinear().domain([1, 50]).range([10, 500]).clamp(true);
 
   const link = linkGroup
     .selectAll('link')
@@ -189,9 +194,6 @@ function renderGraph() {
       exit => exit.remove()
     );
 
-  function getConnectionCount(d) {
-    return d3_links.value.filter(l => l.source.id === d.id || l.target.id === d.id).length
-  }
   const node = nodeGroup
     .selectAll('g.node')
     .data(d3_nodes.value, d => d.id)
@@ -235,11 +237,6 @@ function renderGraph() {
             .style('opacity', 0.3)
             .text(d => d.label.length > 20 ? d.label.substring(0, 20) + '...' : d.label);
         }).on('click', (event, d) => {
-          // Prevent triggering click during drag
-          if (event.defaultPrevented) {
-            return
-          };
-
           loadData(d.id)
         });
 
@@ -338,13 +335,7 @@ function addResultData(results) {
 }
 
 async function loadData(id) {
-  if (isLoading.value) {
-    // Prevent concurrent loads
-    return
-  }
-
-  isLoading.value = true;
-  errorLoading.value = false;
+  statusMessage.value = "Loading data, please wait...";
 
   try {
     if (!queries.has(id)) {
@@ -362,10 +353,13 @@ async function loadData(id) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      showErrorStatus('Data Loading Response NOT OK', response.status);
+      return;
     }
 
     const result = await response.json();
+    statusMessage.value = "";
+
     console.log('API Result:', result);
     queries.set(id, page + 1)
 
@@ -373,10 +367,7 @@ async function loadData(id) {
     renderGraph();
 
   } catch (error) {
-    console.error('Error fetching or processing data:', error);
-    errorLoading.value = true;
-  } finally {
-    isLoading.value = false;
+    showErrorStatus('Catched Error', error);
   }
 }
 
@@ -440,6 +431,32 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.status-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(106, 97, 73, 0.343);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  color: white;
+  font-size: 1.5rem;
+}
+
+.overlay-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 40%;
+}
+
+.overlay-content button {
+  width: 100px;
+}
+
 .graph-config {
   position: absolute;
   width: 400px;
