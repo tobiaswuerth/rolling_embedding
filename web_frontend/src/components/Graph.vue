@@ -122,7 +122,17 @@ watch([linkStiffness, linkAttraction], () => {
 });
 
 function getConnectionCount(d) {
-  return d3_links.value.filter(l => l.source.id === d.id || l.target.id === d.id).length
+  return d3_links.value.filter(l => l.source.id === d.id || l.target.id === d.id).length;
+}
+function getNodeLabel(d, short = true) {
+  let label = d.label;
+  if (short && d.label.length > 20) {
+    label = d.label.substring(0, 20) + '...';
+  }
+  if (!short && d.date) {
+    label = `${d.date}: ${label}`;
+  }
+  return label;
 }
 
 function drag(sim) {
@@ -209,7 +219,7 @@ function renderGraph() {
           .attr('stroke-width', 1);
 
         g.append('text')
-          .text(d => d.label.length > 20 ? d.label.substring(0, 20) + '...' : d.label)
+          .text(d => getNodeLabel(d))
           .attr('x', 15)
           .attr('y', 5)
           .attr('fill', 'white')
@@ -223,21 +233,21 @@ function renderGraph() {
           currentPaper.value = papers.get(d.id)
           d3.select(event.currentTarget)
             .select('circle')
-            .attr('r', d => connectionScale(getConnectionCount(d)) + 3)
+            .attr('r', d => connectionScale(getConnectionCount(d)) + 3);
           d3.select(event.currentTarget)
             .select('text')
             .style('opacity', 1)
-            .text(d.label);
+            .text(d => getNodeLabel(d, false));
         }).on('mouseout', (event, d) => {
           d3.select(event.currentTarget)
             .select('circle')
-            .attr('r', d => connectionScale(getConnectionCount(d)))
+            .attr('r', d => connectionScale(getConnectionCount(d)));
           d3.select(event.currentTarget)
             .select('text')
             .style('opacity', 0.3)
-            .text(d => d.label.length > 20 ? d.label.substring(0, 20) + '...' : d.label);
+            .text(d => getNodeLabel(d));
         }).on('click', (event, d) => {
-          loadData(d.id)
+          loadData(d.id);
         });
 
         return g;
@@ -247,9 +257,7 @@ function renderGraph() {
         update.select('circle')
           .transition().duration(300)
           .attr('fill', d => d3.hsl(colorScale(queries.get(d.id) || 0), 0.8, 0.5))
-          .attr('r', d => connectionScale(getConnectionCount(d)))
-        update.select('text')
-          .text(d => d.label.length > 20 ? d.label.substring(0, 20) + '...' : d.label);
+          .attr('r', d => connectionScale(getConnectionCount(d)));
         return update;
       },
       exit => exit.transition().duration(300)
@@ -288,6 +296,7 @@ function createNode(paper, refNode = null) {
   const newNode = {
     id: paper.id,
     label: paper.title || `Paper ${paper.id}`,
+    date: paper.update_date,
     isCenter: paper.id === initialPaperId,
     x: refNode?.x || 0,
     y: refNode?.y || 0,
