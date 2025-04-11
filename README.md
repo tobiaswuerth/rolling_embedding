@@ -88,9 +88,13 @@ Now, with most of them being ~90% similar on average, I'm still not willing to p
 
 I'm curious how differently the AI model would summarize a paper if it had more than just the abstract. I guess that's something I could try next.
 
+---
+
 Furthermore, I tried comparing:
 - embeddings generated just using the abstract, vs.
 - chunking the full paper, calculating the embeddings for all chunks, then taking the mean of those.
+
+See: [playground_6c_abstract_vs_paper.ipynb](playground_6c_abstract_vs_paper.ipynb)
 
 ![histogram2](./assets/histogram2.png)
 
