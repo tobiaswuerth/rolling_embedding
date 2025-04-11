@@ -88,6 +88,17 @@ Now, with most of them being ~90% similar on average, I'm still not willing to p
 
 I'm curious how differently the AI model would summarize a paper if it had more than just the abstract. I guess that's something I could try next.
 
+Furthermore, I tried comparing:
+- embeddings generated just using the abstract, vs.
+- chunking the full paper, calculating the embeddings for all chunks, then taking the mean of those.
+
+![histogram2](./assets/histogram2.png)
+
+For this batch the result indicates a lower mean similarity with a wider spread, meaning that a mean embedding over the full paper is more different to the embedding generated using just the abstract, compared to the difference between letting an AI summarize the abstract. 
+
+This makes sense, I guess. The AI can just summarize what is has seen, while full text processing most certainly includes information that was not present in the abstract, further changing its semantic representation. I'm still surprised by how similar they are overall, though the compute necessary to calculate all of those embeddings when doing a full text analysis is much bigger compared to calculating just the one for the abstract. I guess that means that (most) scientific authors are relatively good at summarizing their works in the abstract.
+
+
 ---
 # <a id="setup"></a>Setup
 Tested on Windows.
