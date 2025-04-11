@@ -75,7 +75,7 @@ I have plans to build upon this and add more novel functionality to explore the 
 ## <a id="ai_summaries"></a>Experimenting with AI Summaries
 
 I was wondering if value were to be gained by normalizing paper abstracts into a fixed form.
-See: [playground_6_abstract_summary.ipynb](playground_6_abstract_summary.ipynb).
+See: [playground_6a_abstract_summary.ipynb](playground_6a_abstract_summary.ipynb).
 For this I defiend a JSON layout of what information I'd like to have and in what order for each paper, like this:
 ```json
 {
@@ -93,22 +93,23 @@ So, to see if it would be worthwhile I processed ~500 papers to see how differen
 
 Now, with most of them being ~90% similar on average, I'm still not willing to process 2.7mio papers...
 
-I'm curious how differently the AI model would summarize a paper if it had more than just the abstract. I guess that's something I could try next.
+Also, note that similarity is not indicative of quality in this case, because we have no objective measure. This just shows me that it does not really matter which approach you use. I'm curious how differently the AI model would summarize a paper if it had more than just the abstract. I guess that's something I could try next.
 
 ---
 
 Furthermore, I tried comparing:
-- embeddings generated just using the abstract, vs.
-- chunking the full paper, calculating the embeddings for all chunks, then taking the mean of those.
+a) embeddings generated just using the abstract, vs.
+b) chunking the full paper, calculating the embeddings for all chunks, then taking the mean of those.
 
 See: [playground_6c_abstract_vs_paper.ipynb](playground_6c_abstract_vs_paper.ipynb)
 
 ![histogram2](./assets/histogram2.png)
 
-For this batch the result indicates a lower mean similarity with a wider spread, meaning that a mean embedding over the full paper is more different to the embedding generated using just the abstract, compared to the difference between letting an AI summarize the abstract. 
+For this batch the result indicates a lower mean similarity with a wider spread. This means that, compared to the AI abstract summary embedding, the mean full paper chunk embedding is more different to the reference (the embedding generated using just the abstract). 
 
-This makes sense, I guess. The AI can just summarize what is has seen, while full text processing most certainly includes information that was not present in the abstract, further changing its semantic representation. I'm still surprised by how similar they are overall, though the compute necessary to calculate all of those embeddings when doing a full text analysis is much bigger compared to calculating just the one for the abstract. I guess that means that (most) scientific authors are relatively good at summarizing their works in the abstract.
+This makes sense, I guess. The AI will just summarize the information it has seen, predictably producing similar outputs to the given inputs, especially since the normalized JSON form has roughly the same length and content as the abstract. Comparing this with the full text version, which most certainly includes information that was not present in the abstract, it is clear that it should result in different embeddings. Again, this says nothing about the quality though - I really should think about how I can test which one is better, i.e. captures the essence of the texts best.
 
+I'm still surprised by how similar they are overall, even though the compute necessary for the two approaches are vastly different. I guess them being so similar means that (most) scientific authors are relatively good at summarizing their works in the abstract.
 
 ---
 # <a id="setup"></a>Setup
