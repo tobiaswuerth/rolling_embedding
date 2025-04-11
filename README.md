@@ -23,6 +23,8 @@ Run locally:
 I use the [Alibaba-NLP/gte-multilingual-base](https://huggingface.co/Alibaba-NLP/gte-multilingual-base) model to generate embeddings.
 See [playground_0_embedding.ipynb](playground_0_embedding.ipynb) for an example.
 
+---
+
 ## <a id="getting_data"></a>Getting Data
 I explore different approaches.
 
@@ -33,6 +35,8 @@ I explore different approaches.
 2. download only arXiv metadata and use `title+abstract` to analyse. See:
     - [playground_5_elastic_metadata.ipynb](playground_5_elastic_metadata.ipynb), showcasing the process of locally setting up a Elastic search database to persist the processed metadata (2.7mio records atm, ~4.5GB)
 
+---
+
 ## <a id="comparing_data"></a>Comparing Data
 Once I have processed data (Text + Embeddings) I can start comparing and plotting those embeddings to see which texts are similar.
 
@@ -41,6 +45,8 @@ For example, in [playground_4a_comparison.ipynb](playground_4a_comparison.ipynb)
 ![3d_plot](./assets/3d_plot.gif)
 
 In [playground_4b_similarity_search.ipynb](playground_4b_similarity_search.ipynb) I used this search papers matching my query.
+
+---
 
 ## <a id="building_app"></a>Building an App
 All the experiments worked more or less good but I felt like to actually get the best results I
@@ -64,8 +70,9 @@ I then added a graph to visualize the most similar papers for a given one, with 
 
 I have plans to build upon this and add more novel functionality to explore the arXiv papers.
 
-## <a id="ai_summaries"></a>Experimenting with AI Summaries
+---
 
+## <a id="ai_summaries"></a>Experimenting with AI Summaries
 
 I was wondering if value were to be gained by normalizing paper abstracts into a fixed form.
 See: [playground_6_abstract_summary.ipynb](playground_6_abstract_summary.ipynb).
