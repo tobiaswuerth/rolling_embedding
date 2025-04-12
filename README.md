@@ -61,7 +61,7 @@ I ended up with the following setup:
 
 This allows me to build an app using the full capabilities of HTML, CSS and JavaScript and utilize powerful functions in the [Python backend](web_backend.py).
 
-To start, I implemented `match_phrase` (search by text) and `KNN query` (search by embedding) search capabilities. This allows me to find papers that include the exact phrasing as well as ones that are semantically similar:
+To start, I implemented `match_phrase` (search by text) and `KNN query` (search by embedding) search capabilities. This allows me to find papers that include the exact phrasing as well as ones that are semantically similar.
 
 [![frontend_showcase](https://github.com/user-attachments/assets/01299bb2-f424-4a5b-b65d-48b4f8bfa023)](https://github.com/user-attachments/assets/fa2d8439-903b-4e80-9383-6a6ab16c1a0d)
 
@@ -168,11 +168,11 @@ As you see here, the separation between the topics becomes less clear the smalle
 
 I was wondering why some papers were located at a different spot. For this, I reconstructed the last frame with chunk size 1 and clustered it:
 
-TODO IMG
+![paper_character_clusters](https://github.com/user-attachments/assets/9e94296e-6a0f-4e7a-a72a-c9b5bfd66060)
 
 I performed some analysis and found that Cluster 1 (in orange) has a lot more whitespace:
 
-TODO IMG
+![whitespace_ratio](https://github.com/user-attachments/assets/0b295ce4-398e-41bb-91cf-784a64b6410d)
 
 Digging into why this is I found that the PDF is formatted in such a way that the PDF Reader returns the text weirdly populated with whitespaces, for example:
 ```plaintext
@@ -217,7 +217,3 @@ and to build a distributable
 ```bash
 npm run build
 ```
-
-
-
-
