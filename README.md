@@ -146,23 +146,45 @@ As expected, initially each word contributes a lot to the nature of the embeddin
 
 I conclude from this that if one wants more nuanced representations, it is advisable to chunk the text and generate multiple embeddings. The question again is, what is a good chunk size?
 
-For the next test, I gathered 20 papers, 10 for one topic (red) and 10 for another topic (black). To start, I generated 1 embedding per paper by splitting its full text into chunks of length 1024 (hard-cut) and then taking the mean per paper:
+For the next test, I gathered 20 papers, 10 for one topic (red) and 10 for another topic (black). To start, I generated 1 embedding per paper by splitting its full text into chunks of length 1024 and then taking the mean per paper:
 
 ![pca_two_topics](https://github.com/user-attachments/assets/4069080f-28e0-4b7f-99d3-ea29f551a2b6)
 
 As expected, the 2D PCA reduction clearly separates the two groups of topics. This is a good sign that the embedding model is effective in capturing semantic differences.
 
-Next, I wondered what would happen when I started changing the chunk size. For this, I ran several iterations, starting with chunk size 8191 (hard-cut) and going down to chunk size 2. Naturally, this will generate a growing number of embeddings per paper. I do not take the mean of those for the following graphics, but instead show them all at once:
+Next, I wondered what would happen when I started changing the chunk size. For this, I ran several iterations, starting with chunk size 8191 and going down to chunk size 2. Naturally, this will generate a growing number of embeddings per paper. I do not take the mean of those for the following graphics, but instead show them all at once:
 
 [![embedding evolution](https://github.com/user-attachments/assets/017d0e46-5faf-45d1-bce0-8c446d4877bd)](https://github.com/user-attachments/assets/017d0e46-5faf-45d1-bce0-8c446d4877bd)
 
 This illustrates clearly that the two-topic separation starts to break down once the chunk size becomes too small. This can be explained due to the fact that natural language reuses a lot of its phrases, regardless of the topic, leaving only specialized domain vocabulary to distinguish one from the other. 
 
-I also created a visualization with the mean chunked full text paper embedding:
+I also created a visualization with the mean chunked full text paper embedding. This time I hard cut the chunks, meaning I do not respect word boundaries:
 
 [![mean embedding evolution](https://github.com/user-attachments/assets/157f31a1-2d4b-49cf-aafa-683d7b2b23f0)](https://github.com/user-attachments/assets/157f31a1-2d4b-49cf-aafa-683d7b2b23f0)
 
-As you see here, the separation between the topics becomes less clear the smaller the chunks get. In the end they just ocupy the same region as the word/character vectors get averaged out.
+As you see here, the separation between the topics becomes less clear the smaller the chunks get. In the end, they just occupy the same region as the word/character vectors get averaged ou
+
+---
+
+I was wondering why some papers were located at a different spot. For this, I reconstructed the last frame with chunk size 1 and clustered it:
+
+TODO IMG
+
+I performed some analysis and found that Cluster 1 (in orange) has a lot more whitespace:
+
+TODO IMG
+
+Digging into why this is I found that the PDF is formatted in such a way that the PDF Reader returns the text weirdly populated with whitespaces, for example:
+```plaintext
+Thi s c onc l us i on was al r e ady r e ac he d by M ar c hant & Shapi r o ( 1979) ,t hough t he y m ode l l e d s ys t e m swi t h a c or e r adi usi nde pe nde nt of t hebl ac k hol em as s .
+```
+I dont know why this is. But I already noticed that it is still not quite that easy to get good quality data from PDFs. arXiv does provide the paper .tar.gz though which contains (if present) the LaTeX. That might resolve some of the issues of parsing PDF files, I guess. 
+
+Noticing this, I learned 2 things:
+1. This issue probably occurred in other places too in this project
+2. It's surprising that, regardless of how unreadable the text might be for us humans, the embedding model and the LLMs in general, for that matter, are still very capable of understanding some things.
+
+I haven't figured out what the other cluster represents that's off to the side, but I assume it must have something todo with the character distribution... 
 
 ---
 # <a id="setup"></a>Setup
