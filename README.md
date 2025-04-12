@@ -160,7 +160,7 @@ This illustrates clearly that the two-topic separation starts to break down once
 
 I also created a visualization with the mean chunked full text paper embedding:
 
-TODO VIDEO
+[![mean embedding evolution](https://github.com/user-attachments/assets/157f31a1-2d4b-49cf-aafa-683d7b2b23f0)](https://github.com/user-attachments/assets/157f31a1-2d4b-49cf-aafa-683d7b2b23f0)
 
 As you see here, the separation between the topics becomes less clear the smaller the chunks get. In the end they just ocupy the same region as the word/character vectors get averaged out.
 
@@ -195,3 +195,7 @@ and to build a distributable
 ```bash
 npm run build
 ```
+
+
+
+
