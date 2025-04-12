@@ -44,7 +44,7 @@ To process the data I generate an embedding of the combined text `Title+Abstract
 
 For example, in [playground_4a_comparison.ipynb](playground_4a_comparison.ipynb) I calculate 1 embedding for each paper and use this for plotting to see which papers are similar.
 
-![3d_plot](./assets/3d_plot.gif)
+![3d_plot](https://github.com/user-attachments/assets/5e6e2ee6-2aa2-491b-9e1c-045d8d30e36c)
 
 In [playground_4b_similarity_search.ipynb](playground_4b_similarity_search.ipynb) I used this to search papers that match my query.
 
@@ -57,18 +57,17 @@ All the experiments worked more or less good but I felt like to actually get the
 
 I ended up with the following setup:
 
-![component architecture](./assets/diagram.drawio.png)
+![diagram drawio](https://github.com/user-attachments/assets/be7dff91-e070-4200-b1fc-757112ffe362)
 
 This allows me to build an app using the full capabilities of HTML, CSS and JavaScript and utilize powerful functions in the [Python backend](web_backend.py).
 
 To start, I implemented `match_phrase` (search by text) and `KNN query` (search by embedding) search capabilities. This allows me to find papers that include the exact phrasing as well as ones that are semantically similar:
 
-![frontend showcase](./assets/frontend_showcase.gif)
+[![frontend_showcase](https://github.com/user-attachments/assets/01299bb2-f424-4a5b-b65d-48b4f8bfa023)](https://github.com/user-attachments/assets/fa2d8439-903b-4e80-9383-6a6ab16c1a0d)
 
 I then added a graph to visualize the most similar papers for a given one, with abstract preview and the ability to expand nodes as desired:
 
-![frontend showcase2](./assets/frontend_showcase2.gif)
-
+[![frontend showcase2](https://github.com/user-attachments/assets/3ec57a5c-444e-48cb-92a1-4cbd4dc3cbf0)](https://github.com/user-attachments/assets/3ec57a5c-444e-48cb-92a1-4cbd4dc3cbf0)
 
 I have plans to build upon this and add more novel functionality to explore the arXiv papers.
 
@@ -91,7 +90,7 @@ The model used for this task was [gemma3:latest](https://ollama.com/library/gemm
 
 So, to see if it would be worthwhile I processed ~500 papers to see how different the resulting embeddings actually were:
 
-![histogram_abstract_summary.png](./assets/histogram_abstract_summary.png)
+![histogram_abstract_summary](https://github.com/user-attachments/assets/14633fa9-2a3b-48a0-9bdd-c18ab41b559a)
 
 Now, with most of them being ~90% similar on average, I'm still not willing to process 2.7mio papers...
 
@@ -103,7 +102,7 @@ I'm curious how differently the AI model would summarize a paper if it had more 
 
 I analyzed the papers I had downloaded previously and got the following word counts:
 
-![paper_word_count.png](./assets/paper_word_count.png)
+![paper_word_count](https://github.com/user-attachments/assets/bd5926e9-aec5-4b17-a2d3-2acc540bd213)
 
 Since calling ollama with a different context window size redeploys the model every time I decided to fix it at 36000 tokens (~20K words), which should be enough to cover most papers. Paper with more words I just skipped.
 
@@ -111,7 +110,7 @@ The quality of the summaries generated were mixed. Sometimes the model decided t
 
 Given those summaries I again created am embedding for it and compared it to the embedding of the abstract:
 
-![histogram_paper_summary.png](./assets/histogram_paper_summary.png)
+![histogram_paper_summary](https://github.com/user-attachments/assets/98141492-28a6-47c6-a336-42fc49bfafc8)
 
 Compared to the experiment before, this one shows a lower mean similarity with a wider spread. This makes sense I guess since the AI digests much more information in the full text version comared to the abstract only one and can therefore produce more distinct embeddings.
 
@@ -123,7 +122,7 @@ b) chunking the full paper, calculating the embeddings for all chunks, then taki
 
 See: [playground_6c_abstract_vs_paper.ipynb](playground_6c_abstract_vs_paper.ipynb)
 
-![histogram_abstract_vs_paper.png](./assets/histogram_abstract_vs_paper.png)
+![histogram_abstract_vs_paper](https://github.com/user-attachments/assets/dac386ac-f878-4f2c-8140-305f5911c356)
 
 For this batch the result indicates a lower mean similarity with a wider spread. This means that, compared to the AI abstract summary embedding, the mean full paper chunk embedding is more different to the reference (the embedding generated using just the abstract). 
 
@@ -141,7 +140,7 @@ Since chunking the text has proven to be efficient I was wondering what the idea
 
 When a sentence is converted into an embedding, how much different will the embedding become if I add another word? I made a test for a text of ~9500 words and plotted the change that occurs to the embedding each time I append another word to it:
 
-![embedding saturation](./assets/embedding_saturation.png)
+![embedding_saturation](https://github.com/user-attachments/assets/cefe85c9-ae00-46b3-9a1f-b326258a9cd7)
 
 As expected, initially each word contributes a lot to the nature of the embedding but the longer the text the more saturated the embedding becomes and the less important individual words are. There are certain parts of the text though that cause more change even later on, probably when the authors of a paper dive into a new line of thought.
 
@@ -149,13 +148,13 @@ So, too much text for an embedding and important content might get lost, too lit
 
 For the next test I gathered 20 papers, 10 of one topic (red) and 10 of another topic (black). To start I generated 1 embedding per paper by splitting its full text into chunks of length ~1024 and then taking the mean per paper:
 
-![2D PCA reduction of the embeddings of two groups ](./assets/pca_two_topics.png)
+![pca_two_topics](https://github.com/user-attachments/assets/4069080f-28e0-4b7f-99d3-ea29f551a2b6)
 
 As expected, the 2D PCA reduction clearly seperates the two groups of topics. This is a good sign that the embedding model is effective in capturing semantic differences.
 
 Next I wonderd what would happen when I start changing the chunk size. For this I ran several iterations, starting with chunk size 8191 and going down to chunk size 2. Naturally this will generate a growing amount of embeddings per paper. I do not take the mean of those for the following graphic but instead show all at once:
 
-[![Watch the video: 2D PCA reduction evolution for dirrent embedding chunks of two groups](./assets/embedding_plot_for_chunks_thumbnail.png)](https://github.com/tobiaswuerth/rolling_embedding/raw/refs/heads/main/assets/embedding_plot_for_chunks.mp4)
+https://github.com/user-attachments/assets/017d0e46-5faf-45d1-bce0-8c446d4877bd
 
 This illustrates clearly that the two topic seperation starts to break down once the chunk size becomes too small. This can be explained due to the fact that natural language reuses a lot of its phrases, regardless of the topic, leaving only specialiced domain vocabulary to distinguish one from the other. 
 
