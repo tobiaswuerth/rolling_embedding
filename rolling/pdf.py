@@ -1,5 +1,6 @@
 from pypdf import PdfReader
 import os
+import re
 
 
 def list_pdfs(directory="./arxiv_downloads"):
@@ -25,4 +26,8 @@ def read_pdf(file_path):
     for page in reader.pages:
         text += page.extract_text()
 
-    return text
+    return clean_text(text)
+
+
+def clean_text(txt):
+    return re.sub(r"\s+", " ", txt).strip()

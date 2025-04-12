@@ -3,6 +3,7 @@ import pickle
 import numpy as np
 from dataclasses import dataclass
 
+from .pdf import clean_text
 
 @dataclass
 class Paper:
@@ -27,8 +28,8 @@ def create_paper(
     segment_lengths: list[int] = (512, 1024, 2048, 4096),
 ) -> Paper:
 
-    title = re.sub(r"\s+", " ", title).strip()
-    text = re.sub(r"\s+", " ", text).strip()
+    title = clean_text(title)
+    text = clean_text(text)
 
     max_idx = len(text)
 
