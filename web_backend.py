@@ -86,7 +86,7 @@ def search_by_paper_id():
 
         # 2. calc pagination
         # note, since we use KNN afterwards pagination technically doesn't work because you cannot skip before you cluster
-        # nevertheless, one might want to fetch more later on in the process, therefor requiring re-execution - suboptimal, I know
+        # nevertheless, one might want to fetch more later on in the process, therefore requiring re-execution - suboptimal, I know
         page = request.json.get("page", 1)
         page_size = 10
         from_value = (page - 1) * page_size
