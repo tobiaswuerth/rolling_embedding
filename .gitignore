@@ -1,8 +1,10 @@
 .venv/
 .vscode/
+**/__pycache__/**
+
 arxiv_downloads
 arxiv_downloads_processed
 arxiv_ai_paper_summary
 arxiv_metadata
-**/__pycache__/**
+plot_exports
 elastic-start-local

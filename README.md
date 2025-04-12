@@ -13,6 +13,7 @@ Documentation:
 - [Initial Testing](#initial_testing)
 - [Building an App](#building_app)
 - [Different Approaches to Generating Embeddings ](#embedding_approaches)
+- [Different Chunk Sizes](#different-chunk-sizes)
 
 ---
 
@@ -131,6 +132,32 @@ This also makes sense, I guess. This full text version most certainly includes i
 Comparing this similarity chart with the chart from the previous experiment, where an AI was used to summarize the full text paper, they appear to be quite similar. For me this indicates that both approaches tend towards the same results, regardless if you chunk the full text and take the mean of those embeddings or if you use an AI to summarize the paper and generate just one embedding for the summary. I guess to speaks to the AIs ability to extract and summarize the gist of a paper. Using different models most certainly would give different results though. One must also consider the amount of compute it takes. Chunking and generating a batch of embeddings is much faster than summarizing using an AI.
 
 Again, embeddings being similar says nothing about the quality though - I really should think about how I can test which one is better, i.e. captures the essence of the texts best
+
+---
+
+# <a id="different-chunk-sizes"></a>Different Chunk Sizes
+
+Since chunking the text has proven to be efficient I was wondering what the ideal chunk size is. For this I've done some experiments in [playground_7_rolling_embedding.ipynb](playground_7_rolling_embedding.ipynb).
+
+When a sentence is converted into an embedding, how much different will the embedding become if I add another word? I made a test for a text of ~9500 words and plotted the change that occurs to the embedding each time I append another word to it:
+
+![embedding saturation](./assets/embedding_saturation.png)
+
+As expected, initially each word contributes a lot to the nature of the embedding but the longer the text the more saturated the embedding becomes and the less important individual words are. There are certain parts of the text though that cause more change even later on, probably when the authors of a paper dive into a new line of thought.
+
+So, too much text for an embedding and important content might get lost, too little text for an embedding (e.g. single words) and the embedding essentially becomes a dictionary which is not of any use in capturing wider semantic meaning. I conclude from this that if one wants more nuanced representations, it is advisable to chunk the text and generate multiple embeddings. The question again is, what is a good chunk size?
+
+For the next test I gathered 20 papers, 10 of one topic (red) and 10 of another topic (black). To start I generated 1 embedding per paper by splitting its full text into chunks of length ~1024 and then taking the mean per paper:
+
+![2D PCA reduction of the embeddings of two groups ](./assets/pca_two_topics.png)
+
+As expected, the 2D PCA reduction clearly seperates the two groups of topics. This is a good sign that the embedding model is effective in capturing semantic differences.
+
+Next I wonderd what would happen when I start changing the chunk size. For this I ran several iterations, starting with chunk size 8191 and going down to chunk size 2. Naturally this will generate a growing amount of embeddings per paper. I do not take the mean of those for the following graphic but instead show all at once:
+
+<video src="./assets/embedding_plot_for_chunks.mp4"></video>
+
+This illustrates clearly that the two topic seperation starts to break down once the chunk size becomes too small. This can be explained due to the fact that natural language reuses a lot of its phrases, regardless of the topic, leaving only specialiced domain vocabulary to distinguish one from the other. 
 
 ---
 # <a id="setup"></a>Setup
