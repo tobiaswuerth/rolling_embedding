@@ -138,25 +138,25 @@ Again, embeddings being similar says nothing about the quality though - I really
 
 Since chunking the text has proven to be efficient I was wondering what the ideal chunk size is. For this I've done some experiments in [playground_7_rolling_embedding.ipynb](playground_7_rolling_embedding.ipynb).
 
-When a sentence is converted into an embedding, how much different will the embedding become if I add another word? I made a test for a text of ~9500 words and plotted the change that occurs to the embedding each time I append another word to it:
+When a sentence is converted into an embedding, how different will the embedding become if I add another word? I did a test for a text of ~9500 words and plotted the change that occurs to the embedding each time I append another word to it:
 
 ![embedding_saturation](https://github.com/user-attachments/assets/cefe85c9-ae00-46b3-9a1f-b326258a9cd7)
 
-As expected, initially each word contributes a lot to the nature of the embedding but the longer the text the more saturated the embedding becomes and the less important individual words are. There are certain parts of the text though that cause more change even later on, probably when the authors of a paper dive into a new line of thought.
+As expected, initially each word contributes a lot to the nature of the embedding, but the longer the text, the more saturated the embedding becomes and the less important individual words are. There are certain parts of the text though that cause more change even later on, probably when the authors of a paper dive into a new line of thought. So, too much text for an embedding and important content might get lost, too little text for an embedding (e.g. single words) and the embedding essentially becomes a dictionary which is not of any use in capturing wider semantic meaning.
 
-So, too much text for an embedding and important content might get lost, too little text for an embedding (e.g. single words) and the embedding essentially becomes a dictionary which is not of any use in capturing wider semantic meaning. I conclude from this that if one wants more nuanced representations, it is advisable to chunk the text and generate multiple embeddings. The question again is, what is a good chunk size?
+I conclude from this that if one wants more nuanced representations, it is advisable to chunk the text and generate multiple embeddings. The question again is, what is a good chunk size?
 
-For the next test I gathered 20 papers, 10 of one topic (red) and 10 of another topic (black). To start I generated 1 embedding per paper by splitting its full text into chunks of length ~1024 and then taking the mean per paper:
+For the next test, I gathered 20 papers, 10 for one topic (red) and 10 for another topic (black). To start, I generated 1 embedding per paper by splitting its full text into chunks of length ~1024 and then taking the mean per paper:
 
 ![pca_two_topics](https://github.com/user-attachments/assets/4069080f-28e0-4b7f-99d3-ea29f551a2b6)
 
-As expected, the 2D PCA reduction clearly seperates the two groups of topics. This is a good sign that the embedding model is effective in capturing semantic differences.
+As expected, the 2D PCA reduction clearly separates the two groups of topics. This is a good sign that the embedding model is effective in capturing semantic differences.
 
-Next I wonderd what would happen when I start changing the chunk size. For this I ran several iterations, starting with chunk size 8191 and going down to chunk size 2. Naturally this will generate a growing amount of embeddings per paper. I do not take the mean of those for the following graphic but instead show all at once:
+Next, I wondered what would happen when I started changing the chunk size. For this, I ran several iterations, starting with chunk size 8191 and going down to chunk size 2. Naturally, this will generate a growing number of embeddings per paper. I do not take the mean of those for the following graphics, but instead show them all at once:
 
 https://github.com/user-attachments/assets/017d0e46-5faf-45d1-bce0-8c446d4877bd
 
-This illustrates clearly that the two topic seperation starts to break down once the chunk size becomes too small. This can be explained due to the fact that natural language reuses a lot of its phrases, regardless of the topic, leaving only specialiced domain vocabulary to distinguish one from the other. 
+This illustrates clearly that the two-topic separation starts to break down once the chunk size becomes too small. This can be explained due to the fact that natural language reuses a lot of its phrases, regardless of the topic, leaving only specialized domain vocabulary to distinguish one from the other. 
 
 ---
 # <a id="setup"></a>Setup
