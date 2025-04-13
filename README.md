@@ -156,7 +156,7 @@ https://github.com/user-attachments/assets/3851e3b7-b81d-4f21-85e5-1f3defb02e11
 
 This illustrates clearly that the two-topic separation starts to break down once the chunk size becomes too small. This can be explained due to the fact that natural language reuses a lot of its phrases, regardless of the topic, leaving only specialized domain vocabulary to distinguish one from the other. 
 
-I also created a visualization with the mean chunked full text paper embedding. This time I hard cut the chunks, meaning I do not respect word boundaries:
+I also created a visualization with the mean chunked full text paper embedding:
 
 https://github.com/user-attachments/assets/70cd5e24-e7a9-4e62-b51d-a6f11a66f365
 
