@@ -175,7 +175,7 @@ Digging into why this is I found that the PDF is formatted in such a way that th
 ```plaintext
 Thi s c onc l us i on was al r e ady r e ac he d by M ar c hant & Shapi r o ( 1979) ,t hough t he y m ode l l e d s ys t e m swi t h a c or e r adi usi nde pe nde nt of t hebl ac k hol em as s .
 ```
-I dont know why this is. But I already noticed that it is still not quite that easy to get good quality data from PDFs. arXiv does provide the paper .tar.gz though which contains (if present) the LaTeX. That might resolve some of the issues of parsing PDF files, I guess. 
+I already noticed that it is still somewhat difficult to get good quality data from PDFs. arXiv does provide the paper .tar.gz though which contains (if present) the LaTeX. That might resolve some of the issues of parsing PDF files, I guess. I tried different PDF Readers and some return better results but none were perfect. Inspecting the PDF manually I can even see the issue in formatting. Going back to the source of `export.arxiv.org` the issue was present there as well. However, when checking the main domain on `arxiv.org` it all seemed good. I opened a bug report.
 
 Noticing this, I learned 2 things:
 1. This issue probably occurred in other places too in this project
