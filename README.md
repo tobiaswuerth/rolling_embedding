@@ -146,19 +146,19 @@ I conclude from this that if one wants more nuanced representations, it is advis
 
 For the next test, I gathered 20 papers, 10 for one topic (red) and 10 for another topic (black). To start, I generated 1 embedding per paper by splitting its full text into chunks of length ~1024 (soft-cut) and then taking the mean per paper:
 
-![pca_two_topics](https://github.com/user-attachments/assets/4069080f-28e0-4b7f-99d3-ea29f551a2b6)
+![PCA two topics](https://github.com/user-attachments/assets/58429109-3086-4cd3-ac45-ec1b313902c9)
 
 As expected, the 2D PCA reduction clearly separates the two groups of topics. This is a good sign that the embedding model is effective in capturing semantic differences.
 
 Next, I wondered what would happen when I started changing the chunk size. For this, I ran several iterations, starting with chunk size 8192 (hard-cut) and going down to chunk size 1 (hard-cut). Naturally, this will generate a growing number of embeddings per paper. I do not take the mean of those for the following graphics, but instead show them all at once:
 
-![embedding_evolution_over_chunksize](https://github.com/user-attachments/assets/ae1cb9a1-dcfd-4b8a-8fa5-c44e0e508307)
+https://github.com/user-attachments/assets/3851e3b7-b81d-4f21-85e5-1f3defb02e11
 
 This illustrates clearly that the two-topic separation starts to break down once the chunk size becomes too small. This can be explained due to the fact that natural language reuses a lot of its phrases, regardless of the topic, leaving only specialized domain vocabulary to distinguish one from the other. 
 
 I also created a visualization with the mean chunked full text paper embedding. This time I hard cut the chunks, meaning I do not respect word boundaries:
 
-![mean_embedding_evolution_over_chunksize](https://github.com/user-attachments/assets/284eae22-8343-4660-a0e7-11498ce371e8)
+https://github.com/user-attachments/assets/70cd5e24-e7a9-4e62-b51d-a6f11a66f365
 
 As you see here, the separation between the topics becomes less clear the smaller the chunks get. In the end, they just occupy the same region as the word/character vectors get averaged out.
 
