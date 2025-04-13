@@ -39,7 +39,7 @@ def chunk_text(text, size=256, hard_cut=False, overlap=True):
     if text_length <= size:
         return [text]
     if size <= 1:
-        return text.split(' ')
+        return [e for e in list(text) if e.strip()]
 
     step = size // 2 if overlap else size
     chunks = []

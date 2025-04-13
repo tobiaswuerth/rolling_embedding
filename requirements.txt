@@ -19,3 +19,4 @@ torchaudio
 elasticsearch
 flask
 flask-cors
+shapely
