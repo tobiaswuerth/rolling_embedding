@@ -7,7 +7,7 @@ scipy
 scikit-learn
 umap-learn
 arxiv
-pypdf
+PyMuPDF
 ollama
 nltk
 transformers

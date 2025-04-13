@@ -1,4 +1,4 @@
-from pypdf import PdfReader
+import pymupdf
 import os
 import re
 
@@ -20,11 +20,12 @@ def list_pdfs_processed(directory="./arxiv_downloads_processed"):
 
 
 def read_pdf(file_path):
-    reader = PdfReader(file_path)
+    doc = pymupdf.open(file_path)
 
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text()
+    text = "\n".join([
+        page.get_text()
+        for page in doc
+    ])
 
     return clean_text(text)
 
