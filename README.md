@@ -14,6 +14,7 @@ Documentation:
 - [Building an App](#building_app)
 - [Different Approaches to Generating Embeddings ](#embedding_approaches)
 - [Different Chunk Sizes](#different-chunk-sizes)
+- [Data Quality Issue](#data_quality_issue)
 
 ---
 
@@ -162,8 +163,9 @@ I also created a visualization with the mean chunked full text paper embedding. 
 As you see here, the separation between the topics becomes less clear the smaller the chunks get. In the end, they just occupy the same region as the word/character vectors get averaged out.
 
 ---
+# <a id="data_quality_issue"></a>Data Quality Issue
 
-I was wondering why some papers were located at a different spot. For this, I reconstructed the last frame with chunk size 1 and clustered it:
+I was wondering why some papers were located at a different spot on the PCA reduced plane. For this, I reconstructed the last frame with chunk size 1 (single character, hard cut) and clustered it:
 
 ![paper_character_clusters](https://github.com/user-attachments/assets/9e94296e-6a0f-4e7a-a72a-c9b5bfd66060)
 
@@ -175,10 +177,16 @@ Digging into why this is I found that the PDF is formatted in such a way that th
 ```plaintext
 Thi s c onc l us i on was al r e ady r e ac he d by M ar c hant & Shapi r o ( 1979) ,t hough t he y m ode l l e d s ys t e m swi t h a c or e r adi usi nde pe nde nt of t hebl ac k hol em as s .
 ```
-I already noticed that it is still somewhat difficult to get good quality data from PDFs. arXiv does provide the paper .tar.gz though which contains (if present) the LaTeX. That might resolve some of the issues of parsing PDF files, I guess. I tried different PDF Readers and some return better results but none were perfect. Inspecting the PDF manually I can even see the issue in formatting. Going back to the source of `export.arxiv.org` the issue was present there as well. However, when checking the main domain on `arxiv.org` it all seemed good. I opened a bug report.
+I already noticed that it is still somewhat difficult to get good quality data from PDFs. arXiv does provide the paper `.tar.gz` though which contains (if present) the LaTeX. That might resolve some of the issues of parsing PDF files, I guess.
+
+I tried different PDF Readers and some return better results but none were perfect. Inspecting the PDF manually I can even see the issue in formatting. Going back to the source of `export.arxiv.org` the issue was present there as well. However, when checking the main domain on `arxiv.org` it all seemed good:
+
+![good_bad_pdf](https://github.com/user-attachments/assets/8f751827-0a02-446b-8845-b3ea9a668340)
+
+I opened a bug report.
 
 Noticing this, I learned 2 things:
-1. This issue probably occurred in other places too in this project
+1. This issue certainly influenced other parts of this project too
 2. It's surprising that, regardless of how unreadable the text might be for us humans, the embedding model and the LLMs in general, for that matter, are still very capable of understanding some things.
 
 I haven't figured out what the other cluster represents that's off to the side, but I assume it must have something todo with the character distribution... 
