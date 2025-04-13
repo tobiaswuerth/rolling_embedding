@@ -144,7 +144,7 @@ As expected, initially each word contributes a lot to the nature of the embeddin
 
 I conclude from this that if one wants more nuanced representations, it is advisable to chunk the text and generate multiple embeddings. The question again is, what is a good chunk size?
 
-For the next test, I gathered 20 papers, 10 for one topic (red) and 10 for another topic (black). To start, I generated 1 embedding per paper by splitting its full text into chunks of length ~1024 (soft-cut) and then taking the mean per paper:
+For the next test, I gathered 20 papers, 10 for one topic (red) and 10 for another topic (blue). To start, I generated 1 embedding per paper by splitting its full text into chunks of length ~1024 (soft-cut) and then taking the mean per paper:
 
 ![PCA two topics](https://github.com/user-attachments/assets/58429109-3086-4cd3-ac45-ec1b313902c9)
 
