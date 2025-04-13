@@ -44,7 +44,7 @@ To process the data I generate an embedding of the combined text `Title+Abstract
 
 For example, in [playground_4a_comparison.ipynb](playground_4a_comparison.ipynb) I calculate 1 embedding for each paper and use this for plotting to see which papers are similar.
 
-![3d_plot](https://github.com/user-attachments/assets/5e6e2ee6-2aa2-491b-9e1c-045d8d30e36c)
+![3d_embedding_plot](https://github.com/user-attachments/assets/77dd532c-e92e-4ccb-9c5d-9dd3dd404a98)
 
 In [playground_4b_similarity_search.ipynb](playground_4b_similarity_search.ipynb) I used this to search papers that match my query.
 
@@ -127,7 +127,7 @@ This also makes sense, I guess. This full text version most certainly includes i
 
 Comparing this similarity chart with the chart from the previous experiment, where an AI was used to summarize the full text paper, they appear to be quite similar. For me this indicates that both approaches tend towards the same results, regardless if you chunk the full text and take the mean of those embeddings or if you use an AI to summarize the paper and generate just one embedding for the summary. I guess to speaks to the AIs ability to extract and summarize the gist of a paper. Using different models most certainly would give different results though. One must also consider the amount of compute it takes. Chunking and generating a batch of embeddings is much faster than summarizing using an AI.
 
-Again, embeddings being similar says nothing about the quality though - I really should think about how I can test which one is better, i.e. captures the essence of the texts best
+Again, embeddings being similar says nothing about the quality though - I really should think about how I can test which one is better, i.e. captures the essence of the texts best.
 
 ---
 
@@ -151,15 +151,15 @@ As expected, the 2D PCA reduction clearly separates the two groups of topics. Th
 
 Next, I wondered what would happen when I started changing the chunk size. For this, I ran several iterations, starting with chunk size 8191 and going down to chunk size 2. Naturally, this will generate a growing number of embeddings per paper. I do not take the mean of those for the following graphics, but instead show them all at once:
 
-[![embedding evolution](https://github.com/user-attachments/assets/017d0e46-5faf-45d1-bce0-8c446d4877bd)](https://github.com/user-attachments/assets/017d0e46-5faf-45d1-bce0-8c446d4877bd)
+![embedding_evolution_over_chunksize](https://github.com/user-attachments/assets/ae1cb9a1-dcfd-4b8a-8fa5-c44e0e508307)
 
 This illustrates clearly that the two-topic separation starts to break down once the chunk size becomes too small. This can be explained due to the fact that natural language reuses a lot of its phrases, regardless of the topic, leaving only specialized domain vocabulary to distinguish one from the other. 
 
 I also created a visualization with the mean chunked full text paper embedding. This time I hard cut the chunks, meaning I do not respect word boundaries:
 
-[![mean embedding evolution](https://github.com/user-attachments/assets/157f31a1-2d4b-49cf-aafa-683d7b2b23f0)](https://github.com/user-attachments/assets/157f31a1-2d4b-49cf-aafa-683d7b2b23f0)
+![mean_embedding_evolution_over_chunksize](https://github.com/user-attachments/assets/284eae22-8343-4660-a0e7-11498ce371e8)
 
-As you see here, the separation between the topics becomes less clear the smaller the chunks get. In the end, they just occupy the same region as the word/character vectors get averaged ou
+As you see here, the separation between the topics becomes less clear the smaller the chunks get. In the end, they just occupy the same region as the word/character vectors get averaged out.
 
 ---
 
