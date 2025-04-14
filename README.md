@@ -134,7 +134,7 @@ Again, embeddings being similar says nothing about the quality though - I really
 
 # <a id="different-chunk-sizes"></a>Different Chunk Sizes
 
-Since chunking the text has proven to be efficient I was wondering what the ideal chunk size is. For this I've done some experiments in [playground_7_chunk_sizes.ipynb](playground_7_chunk_sizes.ipynb).
+Since chunking the text has proven to be efficient I was wondering what the ideal chunk size is. For this I've done some experiments in [playground_7a_chunk_sizes.ipynb](playground_7a_chunk_sizes.ipynb).
 
 When a sentence is converted into an embedding, how different will the embedding become if I add another word? I did a test for a text of ~9500 words and plotted the change that occurs to the embedding each time I append another word to it:
 
