@@ -15,6 +15,7 @@ Documentation:
 - [Different Approaches to Generating Embeddings ](#embedding_approaches)
 - [Different Chunk Sizes](#different-chunk-sizes)
 - [Data Quality Issue](#data_quality_issue)
+- [Best Chunk Size for Embedding Generation](#best_chunk_size)
 
 ---
 
@@ -190,6 +191,26 @@ Noticing this, I learned 2 things:
 2. It's surprising that, regardless of how unreadable the text might be for us humans, the embedding model and the LLMs in general, for that matter, are still very capable of understanding some things.
 
 I haven't figured out what the other cluster represents that's off to the side, but I assume it must have something todo with the character distribution... 
+
+---
+
+# <a id="best_chunk_size"></a>Best Chunk Size for Embedding Generation
+
+In my attempt to find a good way of finding out what the best chunk size is for embedding generation, I came up with a test that measures the rate of change for decreasing chunk sizes. For this I processed some data in [playground_7b_chunk_size_distance.ipynb](playground_7b_chunk_size_distance.ipynb).
+
+The idea is that the size of a chunk is good as long as it captures the semantic meaning of the text. Meaning, as long as the location of the embedding does not change much, one can make the chunk size smaller. A smaller chunk size has the benefit of resulting in more embeddings for a given text, allowing potentially for more granular searches on specific topics.
+
+To start I loaded ~1000 full text papers I had downloaded before, calculated a mean embedding for them with a chunk size of ~1024 (soft-cut) and clustered them. I then selected the two points which were the furthest apart from each other and gathered ~100 of their neighbors. This gave me two distinct clusters of papers covering different topics:
+
+TODO IMG
+
+I continued by combining all the texts of the respective chunks into one large text and hard-cut it at 1'000'000 characters. These two texts are the base data for further chunking and plotting. For example, chunking with size 4096 with 50% overlap would give me ~490 embeddings for one text. I then take the mean of those embeddings and plot it. In the next round, I reduce the size to say 2048, take the mean again and plot it again. What I'm interested in here is the change in distance between those two locations. Letting this run, the result looks like this:
+
+TODO GIF
+
+Moving from larger to smaller chunk sizes initially reduces the relative change. I assume this has to do with the saturation of the embeddings. In the middle, they stabilize, resulting in very little change. And on the right, with very small chunks, the delta starts to increase exponentially, indicating that the embedding can no longer hold on to the semantic meaning that differentiated the text initially.
+
+Taking a moving average and identifying the smallest value shows that the ideal chunk size is somewhere around ~1100 characters for this model. Further tests are needed.
 
 ---
 # <a id="setup"></a>Setup

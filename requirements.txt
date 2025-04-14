@@ -6,6 +6,7 @@ mplcursors
 scipy
 scikit-learn
 umap-learn
+hdbscan
 arxiv
 PyMuPDF
 ollama
@@ -20,3 +21,4 @@ elasticsearch
 flask
 flask-cors
 shapely
+pillow
