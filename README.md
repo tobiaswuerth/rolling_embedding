@@ -159,7 +159,7 @@ This illustrates clearly that the two-topic separation starts to break down once
 
 I also created a visualization with the mean chunked full text paper embedding:
 
-https://github.com/user-attachments/assets/70cd5e24-e7a9-4e62-b51d-a6f11a66f365
+![mean_embedding_evolution_over_chunksize](https://github.com/user-attachments/assets/46b6bfea-1915-479f-b905-2463a93c660f)
 
 As you see here, the separation between the topics becomes less clear the smaller the chunks get. In the end, they just occupy the same region as the word/character vectors get averaged out.
 
@@ -202,15 +202,17 @@ The idea is that the size of a chunk is good as long as it captures the semantic
 
 To start I loaded ~1000 full text papers I had downloaded before, calculated a mean embedding for them with a chunk size of ~1024 (soft-cut) and clustered them. I then selected the two points which were the furthest apart from each other and gathered ~100 of their neighbors. This gave me two distinct clusters of papers covering different topics:
 
-TODO IMG
+![2D PCA Plot with two clusters](https://github.com/user-attachments/assets/17edc8e6-78a7-4458-899c-717a59849e07)
 
 I continued by combining all the texts of the respective chunks into one large text and hard-cut it at 1'000'000 characters. These two texts are the base data for further chunking and plotting. For example, chunking with size 4096 with 50% overlap would give me ~490 embeddings for one text. I then take the mean of those embeddings and plot it. In the next round, I reduce the size to say 2048, take the mean again and plot it again. What I'm interested in here is the change in distance between those two locations. Letting this run, the result looks like this:
 
-TODO GIF
+![centroid_evolution](https://github.com/user-attachments/assets/f13a7bc8-affa-40bc-af7a-4f783f4e4b50)
 
 Moving from larger to smaller chunk sizes initially reduces the relative change. I assume this has to do with the saturation of the embeddings. In the middle, they stabilize, resulting in very little change. And on the right, with very small chunks, the delta starts to increase exponentially, indicating that the embedding can no longer hold on to the semantic meaning that differentiated the text initially.
 
-Taking a moving average and identifying the smallest value shows that the ideal chunk size is somewhere around ~1100 characters for this model. Further tests are needed.
+Taking a moving average and identifying the smallest value shows that the chunk size with the smallest relative change is around 1024 characters. This must not mean that this is the ideal size though. The delta between the location of the centroid at that timestep with the earlier ones is apparent. One can argue that a good chunk size might as well be around 2048 characters. I think going too big or too small does not make much sense.
+
+All of this applies only to this model. Other embedding models generate larger embedding vectors and have different properties. Further tests are needed.
 
 ---
 # <a id="setup"></a>Setup
