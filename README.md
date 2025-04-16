@@ -206,7 +206,7 @@ To start I loaded ~1000 full text papers I had downloaded before, calculated a m
 
 I continued by combining all the texts of the respective chunks into one large text and hard-cut it at 1'000'000 characters. These two texts are the base data for further chunking and plotting. For example, chunking with size 4096 with 50% overlap would give me ~490 embeddings for one text. I then take the mean of those embeddings and plot it. In the next round, I reduce the size to say 2048, take the mean again and plot it again. What I'm interested in here is the change in distance between those two locations. Letting this run, the result looks like this:
 
-![centroid_evolution](https://github.com/user-attachments/assets/f13a7bc8-affa-40bc-af7a-4f783f4e4b50)
+![embedding centroid_evolution](https://github.com/user-attachments/assets/72dcdb12-bf95-466a-9f42-4c60b5f6bb80)
 
 Moving from larger to smaller chunk sizes initially reduces the relative change. I assume this has to do with the saturation of the embeddings. In the middle, they stabilize, resulting in very little change. And on the right, with very small chunks, the delta starts to increase exponentially, indicating that the embedding can no longer hold on to the semantic meaning that differentiated the text initially.
 
