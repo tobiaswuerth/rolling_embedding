@@ -153,7 +153,7 @@ As expected, the 2D PCA reduction clearly separates the two groups of topics. Th
 
 Next, I wondered what would happen when I started changing the chunk size. For this, I ran several iterations, starting with chunk size 8192 (hard-cut) and going down to chunk size 1 (hard-cut). Naturally, this will generate a growing number of embeddings per paper. I do not take the mean of those for the following graphics, but instead show them all at once:
 
-https://github.com/user-attachments/assets/3851e3b7-b81d-4f21-85e5-1f3defb02e11
+![embedding_evolution_over_chunksize](https://github.com/user-attachments/assets/63188f83-b535-4276-b172-0aafa59b2091)
 
 This illustrates clearly that the two-topic separation starts to break down once the chunk size becomes too small. This can be explained due to the fact that natural language reuses a lot of its phrases, regardless of the topic, leaving only specialized domain vocabulary to distinguish one from the other. 
 
