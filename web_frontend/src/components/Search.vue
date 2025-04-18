@@ -33,8 +33,8 @@
             </v-card-text>
             <v-spacer />
             <v-card-actions>
-              <v-btn :href="`https://arxiv.org/pdf/${item._source.id}`" target="_blank" variant="tonal" density="compact" prepend-icon="mdi-file-pdf-box">
-                View PDF
+              <v-btn :href="`https://arxiv.org/abs/${item._source.id}`" target="_blank" variant="tonal" density="compact" prepend-icon="mdi-file-pdf-box">
+                arXiv
               </v-btn>
               <v-btn :href="`/graph/${item._source.id}`" variant="tonal" density="compact" prepend-icon="mdi-graph">
                 Graph

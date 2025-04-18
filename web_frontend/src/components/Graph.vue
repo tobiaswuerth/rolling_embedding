@@ -27,12 +27,9 @@
           </v-card-text>
           <v-spacer />
           <v-card-actions>
-            <v-btn :href="`https://arxiv.org/pdf/${currentPaper.id}`" target="_blank" variant="tonal" density="compact"
+            <v-btn :href="`https://arxiv.org/abs/${currentPaper.id}`" target="_blank" variant="tonal" density="compact"
               prepend-icon="mdi-file-pdf-box">
-              View PDF
-            </v-btn>
-            <v-btn :href="`/graph/${currentPaper.id}`" variant="tonal" density="compact" prepend-icon="mdi-graph">
-              Graph
+              arXiv
             </v-btn>
           </v-card-actions>
         </v-card>
