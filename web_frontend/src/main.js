@@ -17,6 +17,7 @@ app.use(createVuetify({
 import { createRouter, createWebHistory } from 'vue-router'
 import SearchView from './components/Search.vue'
 import GraphView from './components/Graph.vue'
+import PaperView from './components/Paper.vue'
 
 const routes = [
     {
@@ -24,8 +25,12 @@ const routes = [
         component: SearchView
     },
     {
-        path: '/graph/:id',
+        path: '/graph/:id(.*)',
         component: GraphView
+    },
+    {
+        path: '/paper/:id(.*)',
+        component: PaperView
     },
 ]
 

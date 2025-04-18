@@ -27,3 +27,4 @@ bertopic
 bertopic[spacy]
 nbformat
 datasets
+latexcodec

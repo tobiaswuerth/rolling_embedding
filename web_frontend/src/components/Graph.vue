@@ -27,6 +27,10 @@
           </v-card-text>
           <v-spacer />
           <v-card-actions>
+            <v-btn :href="`/paper/${currentPaper.id}`" variant="tonal" density="compact"
+              prepend-icon="mdi-magnify-expand">
+              View
+            </v-btn>
             <v-btn :href="`https://arxiv.org/abs/${currentPaper.id}`" target="_blank" variant="tonal" density="compact"
               prepend-icon="mdi-file-pdf-box">
               arXiv
@@ -349,7 +353,7 @@ async function loadData(id) {
     }
 
     const page = queries.get(id)
-    const response = await fetch('http://localhost:3001/search_by_paper_id', {
+    const response = await fetch('http://localhost:3001/paper_by_id_and_knn', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -418,6 +422,7 @@ onMounted(async () => {
   svg.call(zoom);
 
   await loadData(initialPaperId)
+  currentPaper.value = papers.get(initialPaperId)
 
   const resizeObserver = new ResizeObserver(entries => {
     for (let entry of entries) {

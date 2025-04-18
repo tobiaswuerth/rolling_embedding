@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from elasticsearch import Elasticsearch
 from rolling.embedding import GTEEmbeddingModel
+import latexcodec
+
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:3000"])
@@ -67,8 +69,19 @@ def search_by_embedding():
         return jsonify({"error": "Error querying Elasticsearch"}), 500
 
 
-@app.route("/search_by_paper_id", methods=["POST"])
-def search_by_paper_id():
+def get_paper_by_id(paper_id):
+    try:
+        response = client.get(index="arxiv", id=paper_id)
+        paper = response["_source"]
+        paper["authors"] = paper["authors"].encode('utf-8').decode("latex")
+        return paper
+    except Exception as e:
+        print(f"Error fetching paper by ID: {e}")
+        return None
+
+
+@app.route("/paper_by_id_and_knn", methods=["POST"])
+def paper_by_id_and_knn():
     try:
         print(f"Received request: {request.json}")
 
@@ -77,8 +90,7 @@ def search_by_paper_id():
             return jsonify({"error": "Paper ID not provided"}), 400
 
         # 1. get paper by id
-        response = client.get(index="arxiv", id=paper_id)
-        paper = response.get("_source", None)
+        paper = get_paper_by_id(paper_id)
         if not paper:
             return jsonify({"error": "Paper not found"}), 404
 
@@ -126,6 +138,26 @@ def search_by_paper_id():
     except Exception as e:
         print(f"Error querying Elasticsearch: {e}")
         return jsonify({"error": "Error querying Elasticsearch"}), 500
+
+
+@app.route("/paper_by_id", methods=["POST"])
+def get_paper_details():
+    try:
+        print(f"Received request: {request.json}")
+
+        paper_id = request.json.get("paper_id", "")
+        if not paper_id:
+            return jsonify({"error": "Paper ID not provided"}), 400
+
+        paper = get_paper_by_id(paper_id)
+        if not paper:
+            return jsonify({"error": "Paper not found"}), 404
+
+        return jsonify(paper)
+
+    except Exception as e:
+        print(f"Error fetching paper details: {e}")
+        return jsonify({"error": "Error fetching paper details"}), 500
 
 
 if __name__ == "__main__":
