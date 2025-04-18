@@ -1,3 +1,4 @@
+ipython
 ipykernel
 ipywidgets
 tqdm
@@ -22,3 +23,7 @@ flask
 flask-cors
 shapely
 pillow
+bertopic
+bertopic[spacy]
+nbformat
+datasets
