@@ -16,8 +16,15 @@ app.use(createVuetify({
 // router
 import { createRouter, createWebHistory } from 'vue-router'
 import SearchView from './components/Search.vue'
-import GraphView from './components/Graph.vue'
+
+
 import PaperView from './components/Paper.vue'
+import PaperAbstractView from './components/PaperAbstract.vue'
+import PaperGraphView from './components/PaperGraph.vue'
+
+import PaperProcessedView from './components/PaperProcessed.vue'
+import PaperStructureView from './components/PaperStructure.vue'
+import PaperImagesView from './components/PaperImages.vue'
 
 const routes = [
     {
@@ -25,12 +32,33 @@ const routes = [
         component: SearchView
     },
     {
-        path: '/graph/:id(.*)',
-        component: GraphView
-    },
-    {
         path: '/paper/:id(.*)',
-        component: PaperView
+        component: PaperView,
+        children: [
+            {
+                path: '',
+                component: PaperAbstractView,
+            },
+            {
+                path: 'graph',
+                component: PaperGraphView,
+            },
+            {
+                path: 'proc',
+                component: PaperProcessedView,
+                children: [
+                    {
+                        path: 'structure',
+                        component: PaperStructureView,
+                    },
+                    {
+                        path: 'images',
+                        component: PaperImagesView,
+                    },
+                ],
+            },
+
+        ]
     },
 ]
 

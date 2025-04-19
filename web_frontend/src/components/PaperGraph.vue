@@ -1,14 +1,5 @@
 <template>
   <v-container fluid>
-
-    <!-- Header  -->
-    <v-app-bar>
-      <template v-slot:prepend>
-        <v-btn icon="mdi-home" href="/"></v-btn>
-      </template>
-      <v-app-bar-title>Graph</v-app-bar-title>
-    </v-app-bar>
-
     <v-row>
       <v-col cols="3" class="bg-gray">
 
@@ -43,13 +34,6 @@
       </v-col>
 
       <v-col cols="9" class="bg-gray">
-        <div class="status-overlay" v-if="statusMessage">
-          <div class="overlay-content">
-            <div>{{ statusMessage }}</div>
-            <v-btn :onclick="clearStatus" v-if="statusShowClose" variant="tonal" prepend-icon="mdi-close">Close</v-btn>
-          </div>
-        </div>
-
         <!-- Graph Config -->
         <div class="graph-config">
           <div class="graph-config-row" v-for="item in configItems" :key="item.label">
@@ -64,6 +48,13 @@
       </v-col>
     </v-row>
 
+    <!-- Status Overlay -->
+    <div class="status-overlay" v-if="statusMessage">
+      <div class="overlay-content">
+        <div>{{ statusMessage }}</div>
+        <v-btn :onclick="clearStatus" v-if="statusShowClose" variant="tonal" prepend-icon="mdi-close">Close</v-btn>
+      </div>
+    </div>
 
   </v-container>
 </template>
@@ -490,7 +481,7 @@ onMounted(async () => {
   border: 1px solid #444;
   border-radius: 8px;
   background-color: #1d1d1d;
-  height: calc(100vh - 115px);
+  height: calc(100vh - 160px);
   max-height: 100%;
 }
 

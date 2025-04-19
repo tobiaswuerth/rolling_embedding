@@ -1,8 +1,8 @@
 <template>
   <v-container fluid>
     <v-row>
-      <v-col cols="4">
-        <v-card class="doc-hierarchy-card">
+      <v-col cols="3" style="padding:0;">
+        <v-card variant="tonal" :style="{ visibility: paperDetails ? 'visible' : 'hidden' }">
           <v-card-title class="text-h6 font-weight-bold">
             Document Hierarchy
           </v-card-title>
@@ -11,7 +11,7 @@
           </v-card-text>
         </v-card>
       </v-col>
-      <v-col cols="8" class="mathjax-process">
+      <v-col cols="9" class="mathjax-process" style="padding:0;">
         <v-card v-if="selectedChapter">
           <v-card-title class="text-h6 font-weight-bold">
             {{ selectedChapter.title }}
@@ -67,7 +67,11 @@ import '../lib/tree.js-master/tree.css';
 const route = useRoute();
 const paperId = route.params.id;
 
+const paper = ref(null);
+const is_downloaded = ref(false);
+const is_processed = ref(false);
 const paperDetails = ref(null);
+
 const selectedChapter = ref(null);
 
 const statusMessage = ref("");
@@ -94,10 +98,7 @@ function getImageUrl(imgPath) {
 function updateMathJax() {
   setTimeout(() => {
     window.MathJax.startup.promise.then(() => {
-      console.log('MathJax is ready');
-      window.MathJax.typesetPromise().then(() => {
-        console.log('MathJax rendering complete');
-      }).catch(console.error);
+      window.MathJax.typesetPromise().catch(console.error);
     }).catch(console.error);
   });
 }
@@ -126,7 +127,7 @@ function setupTree() {
         name: entry.title,
         type: entry.sub_chapters.length > 0 ? Tree.FOLDER : Tree.FILE,
         selected: false,
-        open: false,
+        open: true,
         children: entry.sub_chapters.map(sub_entry => {
           return {
             name: sub_entry.title,
@@ -138,7 +139,7 @@ function setupTree() {
   tree.json(structure);
 }
 
-async function loadData() {
+async function loadDataProcessed() {
   statusMessage.value = "Loading data, please wait...";
 
   try {
@@ -198,7 +199,7 @@ function initMathJax() {
 
 onMounted(() => {
   initMathJax();
-  loadData();
+  loadDataProcessed();
 });
 </script>
 
@@ -227,12 +228,6 @@ onMounted(() => {
 
 .overlay-content button {
   width: 100px;
-}
-
-.doc-hierarchy-card {
-  position: sticky;
-  top: 80px;
-  z-index: 10;
 }
 </style>
 

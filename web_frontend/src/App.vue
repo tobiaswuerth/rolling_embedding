@@ -8,8 +8,12 @@
   </v-app>
 </template>
 
-<style>
-html {
-  overflow: auto !important;
-}
+<script setup>
+
+import AppFooter from './components/AppFooter.vue';
+
+</script>
+
+<style scoped>
+
 </style>
