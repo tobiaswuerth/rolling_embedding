@@ -5,8 +5,16 @@ import elasticsearch
 from elasticsearch import Elasticsearch
 import latexcodec
 import traceback
+import os
 
-from rolling.arxiv import download_paper, paper_is_downloaded, paper_is_processed, process_pdf
+from rolling.arxiv import download_paper, paper_is_downloaded
+from rolling.processing import (
+    process_pdf,
+    load_chapter_hierarchy,
+    paper_is_processed,
+    ARXIV_DIR_PDF_PROCESSED,
+)
+
 from rolling.embedding import GTEEmbeddingModel
 
 
@@ -29,17 +37,18 @@ def get_paper_by_id(paper_id):
     paper["submitter"] = paper["submitter"].encode("utf-8").decode("latex")
     paper["title"] = paper["title"].encode("utf-8").decode("latex")
     paper["abstract"] = paper["abstract"].encode("utf-8").decode("latex")
-    del paper["embedding"]
     return paper
 
 
 @socketio.on("connect")
 def handle_connect():
-    print('SocketIO: client connected')
+    print("SocketIO: client connected")
+
 
 @socketio.on("disconnect")
 def handle_disconnect():
-    print('SocketIO: client disconnected')
+    print("SocketIO: client disconnected")
+
 
 @socketio.on("download_paper")
 def stream_paper_download_progress(data):
@@ -54,12 +63,13 @@ def stream_paper_download_progress(data):
 
         path = download_paper(paper_id, callback=callback_)
         process_pdf(path, callback=callback_)
-        
+
         emit("done")
     except Exception as e:
         print("Error:", e)
         traceback.print_exc()
         emit("error", {"error": str(e)})
+
 
 @socketio.on("process_paper")
 def stream_paper_process_progress(data):
@@ -76,7 +86,7 @@ def stream_paper_process_progress(data):
             emit("progress", {"status": status})
 
         process_pdf(path, callback=callback_)
-        
+
         emit("done")
     except Exception as e:
         print("Error:", e)
@@ -89,9 +99,11 @@ def handle_404(e):
     print("404 Error:", e)
     return jsonify({"error": "Not Found"}), 404
 
+
 @app.errorhandler(elasticsearch.NotFoundError)
 def handle_404_elastic(e):
     return handle_404(e)
+
 
 @app.errorhandler(Exception)
 def handle_error(e):
@@ -119,6 +131,7 @@ def search_by_text():
 
     return jsonify(response["hits"]["hits"])
 
+
 @app.route("/search_by_embedding", methods=["POST"])
 def search_by_embedding():
     print(f"Received request: {request.json}")
@@ -140,6 +153,7 @@ def search_by_embedding():
     )
 
     return jsonify(response["hits"]["hits"])
+
 
 @app.route("/paper_by_id_and_knn", methods=["POST"])
 def paper_by_id_and_knn():
@@ -173,7 +187,8 @@ def paper_by_id_and_knn():
                         "knn": {
                             "field": "embedding",
                             "query_vector": emb,
-                                "k": (page * page_size) + 1,  # +1 because self is excluded afterwards
+                            "k": (page * page_size)
+                            + 1,  # +1 because self is excluded afterwards
                         }
                     }
                 ],
@@ -195,6 +210,7 @@ def paper_by_id_and_knn():
     results = {"paper": paper, "matches": matches}
     return jsonify(results)
 
+
 @app.route("/paper_by_id", methods=["POST"])
 def paper_by_id():
     print(f"Received request: {request.json}")
@@ -214,6 +230,38 @@ def paper_by_id():
             "is_processed": True if paper_is_processed(paper_id) else False,
         }
     )
+
+
+@app.route("/paper_processed_by_id", methods=["POST"])
+def paper_processed_by_id():
+    print(f"Received request: {request.json}")
+
+    paper_id = request.json.get("paper_id", "")
+    if not paper_id:
+        return jsonify({"error": "Paper ID not provided"}), 400
+
+    path = paper_is_processed(paper_id)
+    if not path:
+        return jsonify({"error": "Paper not processed"}), 404
+
+    hierarchy = load_chapter_hierarchy(path)
+
+    return jsonify(
+        {
+            "contents": hierarchy,
+        }
+    )
+
+
+@app.route("/img/<path:path>", methods=["GET"])
+def get_img(path):
+    assert path, "Path is empty"
+    assert os.path.exists(path), "Path does not exist"
+    assert ARXIV_DIR_PDF_PROCESSED in path, "Path is not in ARXIV_DIR_PDF_PROCESSED"
+
+    with open(path, "rb") as f:
+        img = f.read()
+    return img, 200, {"Content-Type": "image/jpeg"}
 
 
 if __name__ == "__main__":

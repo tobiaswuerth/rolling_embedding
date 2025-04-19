@@ -59,14 +59,20 @@
         <v-divider></v-divider>
       </template>
     </v-list>
+
+    <template v-if="is_processed && is_downloaded && !processRunning">
+      <PaperDetailsView></PaperDetailsView>
+    </template>
+
   </v-container>
 </template>
 
 <script setup>
-import * as d3 from 'd3';
 import { io } from "socket.io-client";
-import { onMounted, ref, nextTick, watch } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import PaperDetailsView from './PaperDetails.vue';
+
 
 const route = useRoute();
 const paperId = route.params.id;
