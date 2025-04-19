@@ -225,6 +225,13 @@ py -m venv .venv
 pip3 install -r .\requirements.txt
 ```
 
+For processing PDFs I use [MinerU](https://github.com/opendatalab/MinerU) which needs to be setup, i.e. download the models used for PDF processing like this:
+```bash
+wget https://github.com/opendatalab/MinerU/raw/master/scripts/download_models_hf.py -O download_models_hf.py
+py download_models_hf.py
+del download_models_hf.py
+```
+
 ## Web-Backend
 ```bash
 .\.venv\Scripts\activate

@@ -21,6 +21,7 @@ torchaudio
 elasticsearch
 flask
 flask-cors
+flask-socketio
 shapely
 pillow
 bertopic
@@ -28,3 +29,5 @@ bertopic[spacy]
 nbformat
 datasets
 latexcodec
+magic-pdf[full]
+huggingface_hub
