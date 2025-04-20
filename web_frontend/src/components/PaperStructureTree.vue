@@ -94,6 +94,11 @@ function setupTree() {
   const tree = new Tree(document.getElementById('tree'));
 
   tree.on('select', e => {
+    if (e.tagName === 'SUMMARY' && !e.closest('details').open) {
+      const details = e.closest('details');
+      tree.open(details);
+    }
+
     const hierarchy = tree.hierarchy(e);
     let lookingFor = hierarchy.pop().textContent;
     let chapter = paperDetails.value.find(entry => entry.data.text === lookingFor);
@@ -102,7 +107,6 @@ function setupTree() {
       lookingFor = hierarchy.pop().textContent;
       chapter = chapter.children.find(entry => entry.data.text === lookingFor);
     }
-    console.log(chapter);
     selectedChapter.value = chapter;
     updateMathJax();
   });
