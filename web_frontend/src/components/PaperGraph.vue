@@ -9,7 +9,7 @@
             {{ currentPaper.title }}
           </v-card-title>
           <v-card-subtitle class="d-flex flex-wrap gap-1">
-            <div class="text-caption" style="white-space: normal;">
+            <div class="text-caption" style="text-overflow: ellipsis; overflow: hidden;">
               {{ currentPaper.authors }}
             </div>
           </v-card-subtitle>
