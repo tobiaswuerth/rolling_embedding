@@ -118,7 +118,9 @@ function setupTree() {
     }
   }
 
-  const structure = paperDetails.value.map(_createStructureEntry);
+  const structure = paperDetails.value
+    .filter(e => e.type === 'chapter' && e.children.length > 0)
+    .map(_createStructureEntry);
   tree.json(structure);
 }
 
