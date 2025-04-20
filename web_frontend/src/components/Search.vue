@@ -24,7 +24,8 @@
               {{ item._source.title }}
             </v-card-title>
             <v-card-subtitle class="d-flex flex-wrap gap-1">
-              <span class="text-caption" style="white-space: normal;">
+              <span class="text-caption" style="text-overflow: ellipsis; overflow: hidden;">
+                {{ item._source.date }}
                 {{ item._source.authors }}
               </span>
             </v-card-subtitle>
@@ -114,6 +115,7 @@ onMounted(() => {
 .result-card {
   max-height: 500px;
 }
+
 .line-clamp {
   overflow-y: auto;
 }
