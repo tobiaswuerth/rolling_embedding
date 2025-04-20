@@ -5,6 +5,8 @@
         <v-card variant="tonal" :style="{ visibility: paperDetails ? 'visible' : 'hidden' }">
           <v-card-title class="text-h6 font-weight-bold">
             Document Hierarchy
+            <v-btn style="float:right;" size="small" density="compact" class="text-red" @click="deleteStructure"
+              icon="mdi-delete"></v-btn>
           </v-card-title>
           <v-card-text>
             <div id="tree" class="dark mathjax-ignore"></div>
@@ -67,6 +69,27 @@ const selectedChapter = ref(null);
 function getImageUrl(imgPath) {
   const imgPathEncoded = encodeURIComponent(imgPath);
   return `http://localhost:3001/img/${imgPathEncoded}`;
+}
+
+function deleteStructure() {
+  const confirmDelete = confirm("Are you sure you want to delete the structure? This will require/allow you to reprocess the paper.");
+  if (!confirmDelete) {
+    return;
+  }
+
+  showOverlay("Deleting structure...");
+  fetch('http://localhost:3001/delete_document_by_id', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      paper_id: paperId,
+    }),
+  }).then(response => {
+    hideOverlay();
+    window.location.reload();
+  }).catch(error => {
+    showOverlay('Error deleting paper data', true, error);
+  });
 }
 
 function setupTree() {
@@ -141,9 +164,7 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>
 
 <style>
 .MathJax {

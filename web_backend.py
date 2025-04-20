@@ -17,6 +17,7 @@ from rolling.processing import (
     structurize_pdf,
     pdf_is_structurized,
     load_document,
+    delete_pdf_structurized,
     ARXIV_DIR_PDF_PROCESSED,
 )
 
@@ -248,6 +249,17 @@ def _load_document_by_id():
             "contents": doc,
         }
     )
+
+@app.route("/delete_document_by_id", methods=["DELETE"])
+def _delete_document_by_id():
+    print(f"Received request: {request.json}")
+
+    paper_id = request.json.get("paper_id", "")
+    if not paper_id:
+        return jsonify({"error": "Paper ID not provided"}), 400
+
+    delete_pdf_structurized(paper_id)
+    return jsonify()
 
 
 @app.route("/img/<path:path>", methods=["GET"])

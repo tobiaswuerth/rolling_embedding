@@ -8,6 +8,7 @@ import pydantic
 import ollama
 from dataclasses import dataclass
 import pickle
+import random
 
 from .arxiv import clean_for_filename, pdf_is_downloaded
 
@@ -42,6 +43,16 @@ def pdf_is_structurized(paper_id):
         return False
     struct_path = os.path.join(proc_dir, DOC_STRUCTURIZED_FILENAME)
     return os.path.exists(struct_path)
+
+
+def delete_pdf_structurized(paper_id):
+    assert paper_id, "Paper ID is empty"
+    assert pdf_is_structurized(paper_id), f"Paper {paper_id} is not structurized"
+    proc_dir = pdf_is_processed(paper_id)
+    assert proc_dir, f"Paper {paper_id} is not processed"
+    struct_path = os.path.join(proc_dir, DOC_STRUCTURIZED_FILENAME)
+    assert os.path.exists(struct_path), f"File {struct_path} does not exist"
+    os.remove(struct_path)
 
 
 def read_processed_contentsJSON(dir_path):
@@ -141,33 +152,56 @@ class DocHierarchy__(pydantic.BaseModel):
 
 def hierarchize_headers(
     headers: list[str],
-    llm_model="gemma3:12b",
+    llm_model="mistral-small3.1",
 ) -> DocHierarchy__:
 
     template = """
-You're given a structure of a document.
-Each line has a chapter id (int) and a title (str) indicating the name of the chapter.
-Your task is to consider the whole document as a tree structure and figure out which of these chapters belong onto which level.
-For example, there might be a chapter "3. This is a title", followed by "3.1 This is some other title".
-This would be indicative, that "3.1" is a subchapter of "3", therefore you would set level=1 "3.1" and level=0 for "3".
-It's also possible that the naming scheme is different, for example "A. This is a title", followed by "A.1 This is some other title".
-This would be indicative, that "A.1" is a subchapter of "A", therefore you would set level=1 for "A.1" and level=0 for "A".
-If you encounter further nesting, feel free to increase the level by 1 for each subchapter.
-Typically though, any main chapter will be at level 0, any subchapter at level 1, and any sub-subchapter at level 2 etc.
-This would be indicative, that "A.1.1" is a subchapter of "A.1", therefore you would set level=2 for "A.1.1" and level=1 for "A.1" etc.
-Also note, not all naming conventions follow a clear logic.
-Given the document structure as a whole, there might be sections where it is implicitly clear that a chapter is a subchapter of another chapter, even if the naming scheme does not follow a clear logic.
-For example the appendixes, which might not have unique numbering or uses letters instead.
-If for some reason you encounter a title which is clearly a mistake, please set the level to -1, although that should not happen often.
-You must include the exact same amount of chapters as given, any missing ones will be considered a mistake.
-Here is the outline:
-""".strip()
+You are an expert in document structure and hierarchy.
+You are given a list of chapter titles from a document.
+Each title is provided as a tuple `(id, title)`, where `id` is a unique integer (its original position/enumeration in the document) and `title` is the string content of the header.
+Your task is to determine the hierarchical level (`level`) for each chapter based on its title and its position relative to other titles in the list. The `level` is an integer representing the depth in the document structure (e.g., 0 for top-level chapters, 1 for subchapters, 2 for sub-subchapters, etc.).
+
+### Strict Hierarchy Rules:
+Apply these rules rigorously to determine the level of each chapter:
+
+1.  **Top-Level Chapters (Level 0):**
+    -   Chapters with primary sequential numbering (e.g., "1. Title", "2. Another Title", "3. Section", etc.). This also includes alphabetical primary numbering (e.g., "A. Section", "B. Section").
+    -   Standard front matter, back matter, or major sections without numbering (e.g., "Title Page", "Copyright", "Dedication", "Acknowledgements", "Contents", "Abstract", "Preface", "Introduction", "Conclusion", "Appendix", "References", "Index"). These sections are also level 0.
+
+2.  **Subchapters (Level 1 and beyond):**
+    -   Chapters with nested numbering (e.g., "1.1 Subtitle", "1.2 Another Subtitle", "2.1 Subsection", "A.1 Subsection").
+    -   The level of a numbered subchapter is determined by the count of numeric or alphanumeric components separated by periods (dots) in its prefix, relative to the most recent preceding parent chapter.
+    -   For example, if "1." is level 0, then "1.1", "1.2", "1.3" are level 1. If "1.2" is level 1, then "1.2.1", "1.2.2" are level 2.
+
+3.  **Handling Transitions and Non-Numbered Sections:**
+    -   **Crucially:** A numbered chapter (like "1. Title", "2. Title", etc.) that follows one or more non-numbered level 0 sections (such as "Abstract" or "Introduction") should **always** be treated as a new level 0 chapter. It starts the main numbered sequence of the document and should **never** be nested under the preceding non-numbered section.
+    -   Chapters without clear numbering (and not in the list of standard level 0 sections) should have their level inferred from the *immediately preceding chapter*. If the preceding chapter is level N, the current non-numbered chapter is likely level N or N+1 if its content suggests it's a subdivision. However, prioritize the rules for numbered sections.
+
+### Guidelines:
+-   Maintain the original `id` for each chapter in the output.
+-   The output list must contain the exact same number of chapters as the input list.
+-   Assign a non-negative integer `level` (0 or greater) to each chapter.
+-   Pay close attention to the numbering patterns as the primary indicator of hierarchy as well as their semantical belonging considering the table of contents as a whole.
+
+Your input is:
+"""
 
     try:
         data = json.dumps(list(enumerate(headers)))
         prompt = f"{template}\n{data}"
+        context_length = max(4096, len(prompt.split()) * 3)
+        seed = random.randint(0, 2**30 - 1)
+        print(f"Context length: {context_length} / Seed: {seed}")
         format = DocHierarchy__.model_json_schema()
-        response = ollama.generate(llm_model, prompt, format=format)
+        response = ollama.generate(
+            llm_model,
+            prompt,
+            format=format,
+            options={
+                "num_ctx": context_length,
+                "seed": seed,
+            },
+        )
         response = DocHierarchy__.model_validate_json(response["response"])
 
         assert response is not None, "Response is None"
@@ -175,7 +209,7 @@ Here is the outline:
         assert len(response.chapters) == len(headers), "Chapters length mismatch"
         for i, chapter in enumerate(response.chapters):
             assert chapter.id == i, f"Chapter id mismatch: {chapter.id} != {i}"
-            assert chapter.level >= -1, f"Chapter level mismatch: {chapter.level} < -1"
+            assert chapter.level >= 0, "Chapter level is negative"
 
         return response
     except Exception as e:
@@ -196,6 +230,18 @@ def build_document(content: list, headers: list, hierarchy: DocHierarchy__) -> C
     document = Content(type="document", data={}, children=[], level=-1)
     parents_stack: list[Content] = []
 
+    def find_unique_name(name: str, nodes: list[Content]) -> str:
+        existing_names = {child.data["text"].lower() for child in nodes if "text" in child.data}
+        if name.lower() not in existing_names:
+            return name
+
+        suffix = 2
+        while f"{name} ({suffix})".lower() in existing_names:
+            suffix += 1
+            if suffix > 1000:
+                raise ValueError(f"Too many duplicates for {name}")
+        return f"{name} ({suffix})"
+
     for e in content:
         if e["type"] == "text" and not e["text"].strip():
             continue
@@ -203,27 +249,25 @@ def build_document(content: list, headers: list, hierarchy: DocHierarchy__) -> C
         # handle chapters
         if "text_level" in e:
             level = sublevel_map[e["text"]]
-            node = Content(type="chapter", data=e, children=[], level=level)
-
-            if not parents_stack:
-                document.children.append(node)
-                parents_stack.append(node)
-                continue
 
             while parents_stack and level <= parents_stack[-1].level:
                 parents_stack.pop()
-            
-            (parents_stack[-1].children if parents_stack else document.children).append(node)
+
+            target_list = document.children if not parents_stack else parents_stack[-1].children
+            name = find_unique_name(e["text"], target_list)
+            e["text"] = name
+            node = Content(type="chapter", data=e, children=[], level=level)
+            target_list.append(node)
             parents_stack.append(node)
             continue
 
         # handle all other types
         if not parents_stack:
             # create empty chapter for entrys without parent
-            node = Content(type="chapter", data={'text': '<?>'}, children=[], level=0)
+            node = Content(type="chapter", data={"text": "<?>"}, children=[], level=0)
             document.children.append(node)
             parents_stack.append(node)
-        
+
         level = parents_stack[-1].level + 1
         node = Content(type=e["type"], data=e, children=[], level=level)
         parents_stack[-1].children.append(node)
