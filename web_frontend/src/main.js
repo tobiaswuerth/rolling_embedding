@@ -23,8 +23,10 @@ import PaperAbstractView from './components/PaperAbstract.vue'
 import PaperGraphView from './components/PaperGraph.vue'
 
 import PaperProcessedView from './components/PaperProcessed.vue'
-import PaperStructureView from './components/PaperStructure.vue'
 import PaperImagesView from './components/PaperImages.vue'
+import PaperStructureView from './components/PaperStructure.vue'
+import PaperStructureTreeView from './components/PaperStructureTree.vue'
+import PaperStructureMapView from './components/PaperStructureMap.vue'
 
 const routes = [
     {
@@ -50,6 +52,16 @@ const routes = [
                     {
                         path: 'structure',
                         component: PaperStructureView,
+                        children: [
+                            {
+                                path: '',
+                                component: PaperStructureTreeView,
+                            },
+                            {
+                                path: 'map',
+                                component: PaperStructureMapView,
+                            }
+                        ]
                     },
                     {
                         path: 'images',

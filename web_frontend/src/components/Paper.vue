@@ -11,7 +11,7 @@
   </v-app-bar>
 
   <v-card>
-    <v-tabs bg-color="indigo-darken-2">
+    <v-tabs bg-color="indigo-darken-4">
       <v-tab :to="`/paper/${paperId}`" prepend-icon="mdi-text-short" value="abstract">Abstract</v-tab>
       <v-tab :to="`/paper/${paperId}/proc/structure`" prepend-icon="mdi-view-list-outline" value="hierarchy">Structure</v-tab>
       <v-tab :to="`/paper/${paperId}/proc/images`" prepend-icon="mdi-image-outline" value="images">Images</v-tab>
