@@ -14,29 +14,30 @@
       <v-col cols="9" class="mathjax-process" style="padding:0;">
         <v-card v-if="selectedChapter">
           <v-card-title class="text-h6 font-weight-bold">
-            {{ selectedChapter.title }}
+            {{ selectedChapter.data.text }}
           </v-card-title>
           <v-card-text>
             <v-container fluid>
-              <div v-for="(content, index) in selectedChapter.contents" :key="index" class="mb-4">
+              <div v-for="(content, index) in selectedChapter.children" :key="index" class="mb-4">
                 <div v-if="content.type === 'text' || content.type === 'equation'">
-                  {{ content.text }}
+                  {{ content.data.text }}
                 </div>
                 <div v-else-if="content.type === 'image' || content.type === 'table'">
-                  <a v-if="content.img_path" :href="getImageUrl(content.img_path)" target="_blank">
-                    <img :src="getImageUrl(content.img_path)" alt="img" class="img-fluid" style="max-width: 100%;"
+                  <a v-if="content.data.img_path" :href="getImageUrl(content.data.img_path)" target="_blank">
+                    <img :src="getImageUrl(content.data.img_path)" alt="img" class="img-fluid" style="max-width: 100%;"
                       loading="lazy" />
                   </a>
-                  <div v-if="content.img_caption && content.img_caption.length > 0">
-                    {{ content.img_caption.join(' ') }}
+                  <div v-if="content.data.img_caption && content.data.img_caption.length > 0">
+                    {{ content.data.img_caption.join(' ') }}
                   </div>
-                  <div v-if="content.table_caption && content.table_caption.length > 0">
-                    {{ content.table_caption.join(' ') }}</div>
-                  <div v-if="content.img_footnote && content.img_footnote.length > 0">
-                    {{ content.img_footnote.join(' ') }}</div>
-                  <div v-if="content.table_footnote && content.table_footnote.length > 0">
-                    {{ content.table_footnote.join(' ') }}</div>
+                  <div v-if="content.data.table_caption && content.data.table_caption.length > 0">
+                    {{ content.data.table_caption.join(' ') }}</div>
+                  <div v-if="content.data.img_footnote && content.data.img_footnote.length > 0">
+                    {{ content.data.img_footnote.join(' ') }}</div>
+                  <div v-if="content.data.table_footnote && content.data.table_footnote.length > 0">
+                    {{ content.data.table_footnote.join(' ') }}</div>
                 </div>
+                <p v-else-if="content.type === 'chapter'"></p>
                 <div v-else class="bg-error">
                   <p>Unknown content type: {{ content.type }}</p>
                   {{ content }}
@@ -47,52 +48,57 @@
         </v-card>
       </v-col>
     </v-row>
-
-    <!-- Status Overlay -->
-    <div class="status-overlay" v-if="statusMessage">
-      <div class="overlay-content">
-        <div>{{ statusMessage }}</div>
-        <v-btn :onclick="clearStatus" v-if="statusShowClose" variant="tonal" prepend-icon="mdi-close">Close</v-btn>
-      </div>
-    </div>
   </v-container>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { onMounted, ref, inject, watch } from 'vue';
 import '../lib/tree.js-master/tree.js';
 import '../lib/tree.js-master/tree.css';
 
-const route = useRoute();
-const paperId = route.params.id;
-
-const paper = ref(null);
-const is_downloaded = ref(false);
-const is_processed = ref(false);
-const paperDetails = ref(null);
-
+// Inject data from parent component
+const { hideOverlay, showOverlay } = inject('overlay');
+const paperId = inject('paperId');
+const paper = inject('paper');
+const paperDetails = inject('paperDetails');
+console.log(paperDetails)
 const selectedChapter = ref(null);
-
-const statusMessage = ref("");
-const statusShowClose = ref(false);
-
-function clearStatus() {
-  statusMessage.value = "";
-  statusShowClose.value = false;
-}
-function showErrorStatus(msg = "Error", error_obj = null) {
-  console.error(msg, error_obj);
-  if (error_obj) {
-    msg += `: ${error_obj}`;
-  }
-  statusMessage.value = msg;
-  statusShowClose.value = true;
-}
 
 function getImageUrl(imgPath) {
   const imgPathEncoded = encodeURIComponent(imgPath);
   return `http://localhost:3001/img/${imgPathEncoded}`;
+}
+
+function setupTree() {
+  const tree = new Tree(document.getElementById('tree'));
+
+  tree.on('select', e => {
+    const hierarchy = tree.hierarchy(e);
+    let lookingFor = hierarchy.pop().textContent;
+    let chapter = paperDetails.value.find(entry => entry.data.text === lookingFor);
+
+    while (hierarchy.length > 0) {
+      lookingFor = hierarchy.pop().textContent;
+      chapter = chapter.children.find(entry => entry.data.text === lookingFor);
+    }
+    console.log(chapter);
+    selectedChapter.value = chapter;
+    updateMathJax();
+  });
+
+  function _createStructureEntry(entry) {
+    const subChapters = entry.children.filter(e => e.type === 'chapter');
+    return {
+      name: entry.data.text,
+      type: subChapters.length > 0 ? Tree.FOLDER : Tree.FILE,
+      selected: false,
+      open: true,
+      children: subChapters.map(_createStructureEntry),
+    }
+  }
+
+  const structure = paperDetails.value.map(_createStructureEntry);
+  tree.json(structure);
 }
 
 function updateMathJax() {
@@ -103,75 +109,7 @@ function updateMathJax() {
   });
 }
 
-function setupTree() {
-  const tree = new Tree(document.getElementById('tree'));
-
-  tree.on('select', e => {
-    const hierarchy = tree.hierarchy(e);
-    let lookingFor = hierarchy.pop().textContent;
-    let chapter = paperDetails.value.find(entry => entry.title === lookingFor);
-
-    if (hierarchy.length > 0) {
-      let lookingFor = hierarchy.pop().textContent;
-      chapter = chapter.sub_chapters.find(sub_entry => sub_entry.title === lookingFor);
-    }
-    selectedChapter.value = chapter;
-
-    updateMathJax();
-  });
-
-  const structure = paperDetails.value
-    .filter(e => e.contents.length > 0 || e.sub_chapters.length > 0)
-    .map(entry => {
-      return {
-        name: entry.title,
-        type: entry.sub_chapters.length > 0 ? Tree.FOLDER : Tree.FILE,
-        selected: false,
-        open: true,
-        children: entry.sub_chapters.map(sub_entry => {
-          return {
-            name: sub_entry.title,
-          }
-        }),
-      }
-    });
-
-  tree.json(structure);
-}
-
-async function loadDataProcessed() {
-  statusMessage.value = "Loading data, please wait...";
-
-  try {
-    const response = await fetch('http://localhost:3001/paper_processed_by_id', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        paper_id: paperId,
-      }),
-    });
-
-    if (!response.ok) {
-      showErrorStatus('Data Loading Response NOT OK', response.status);
-      return;
-    }
-
-    const result = await response.json();
-    statusMessage.value = "";
-
-    console.log('API Result:', result);
-    paperDetails.value = result.contents;
-    setupTree();
-
-  } catch (error) {
-    showErrorStatus('Catched Error', error);
-  }
-}
-
 function initMathJax() {
-  if (window.MathJax) {
-    return;
-  }
   console.log('Loading MathJax...');
   window.MathJax = {
     tex: {
@@ -199,36 +137,12 @@ function initMathJax() {
 
 onMounted(() => {
   initMathJax();
-  loadDataProcessed();
+  setupTree();
 });
 </script>
 
 <style scoped>
-.status-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(106, 97, 73, 0.343);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-  color: white;
-  font-size: 1.5rem;
-}
 
-.overlay-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 40%;
-}
-
-.overlay-content button {
-  width: 100px;
-}
 </style>
 
 <style>

@@ -7,11 +7,16 @@ import latexcodec
 import traceback
 import os
 
-from rolling.arxiv import download_paper, paper_is_downloaded
+from rolling.arxiv import (
+    download_pdf,
+    pdf_is_downloaded,
+)
 from rolling.processing import (
     process_pdf,
-    load_chapter_hierarchy,
-    paper_is_processed,
+    pdf_is_processed,
+    structurize_pdf,
+    pdf_is_structurized,
+    load_document,
     ARXIV_DIR_PDF_PROCESSED,
 )
 
@@ -50,48 +55,36 @@ def handle_disconnect():
     print("SocketIO: client disconnected")
 
 
-@socketio.on("download_paper")
-def stream_paper_download_progress(data):
-    try:
-        paper_id = data.get("paper_id", "")
-        if not paper_id:
-            emit("error", {"error": "Paper ID not provided"})
-            return
-
-        def callback_(status):
-            emit("progress", {"status": status})
-
-        path = download_paper(paper_id, callback=callback_)
-        process_pdf(path, callback=callback_)
-
-        emit("done")
-    except Exception as e:
-        print("Error:", e)
-        traceback.print_exc()
-        emit("error", {"error": str(e)})
+@socketio.on_error()
+def handle_socketio_error(e):
+    print("SocketIO Error:", e)
+    traceback.print_exc()
+    emit("error", {"error": str(e)})
 
 
-@socketio.on("process_paper")
-def stream_paper_process_progress(data):
-    try:
-        paper_id = data.get("paper_id", "")
-        if not paper_id:
-            emit("error", {"error": "Paper ID not provided"})
-            return
+def socketio_callback_progress(status):
+    emit("progress", {"status": status})
 
-        path = paper_is_downloaded(paper_id)
-        assert path, "Paper not downloaded"
 
-        def callback_(status):
-            emit("progress", {"status": status})
+@socketio.on("paper_1_download")
+def paper_1_download(data):
+    paper_id = data["paper_id"]
+    download_pdf(paper_id, callback=socketio_callback_progress)
+    emit("done")
 
-        process_pdf(path, callback=callback_)
 
-        emit("done")
-    except Exception as e:
-        print("Error:", e)
-        traceback.print_exc()
-        emit("error", {"error": str(e)})
+@socketio.on("paper_2_process")
+def paper_2_process(data):
+    paper_id = data["paper_id"]
+    process_pdf(paper_id, callback=socketio_callback_progress)
+    emit("done")
+
+
+@socketio.on("paper_3_structurize")
+def paper_3_structurize(data):
+    paper_id = data["paper_id"]
+    structurize_pdf(paper_id, callback=socketio_callback_progress)
+    emit("done")
 
 
 @app.errorhandler(404)
@@ -113,7 +106,7 @@ def handle_error(e):
 
 
 @app.route("/search_by_text", methods=["POST"])
-def search_by_text():
+def _search_by_text():
     print(f"Received request: {request.json}")
 
     query = request.json.get("query", "")
@@ -133,7 +126,7 @@ def search_by_text():
 
 
 @app.route("/search_by_embedding", methods=["POST"])
-def search_by_embedding():
+def _search_by_embedding():
     print(f"Received request: {request.json}")
 
     query = request.json.get("query", "")
@@ -156,7 +149,7 @@ def search_by_embedding():
 
 
 @app.route("/paper_by_id_and_knn", methods=["POST"])
-def paper_by_id_and_knn():
+def _paper_by_id_and_knn():
     print(f"Received request: {request.json}")
 
     paper_id = request.json.get("paper_id", "")
@@ -212,7 +205,7 @@ def paper_by_id_and_knn():
 
 
 @app.route("/paper_by_id", methods=["POST"])
-def paper_by_id():
+def _paper_by_id():
     print(f"Received request: {request.json}")
 
     paper_id = request.json.get("paper_id", "")
@@ -226,35 +219,39 @@ def paper_by_id():
     return jsonify(
         {
             "paper": paper,
-            "is_downloaded": True if paper_is_downloaded(paper_id) else False,
-            "is_processed": True if paper_is_processed(paper_id) else False,
+            "is_downloaded": True if pdf_is_downloaded(paper_id) else False,
+            "is_processed": True if pdf_is_processed(paper_id) else False,
+            "is_structurized": True if pdf_is_structurized(paper_id) else False,
         }
     )
 
 
-@app.route("/paper_processed_by_id", methods=["POST"])
-def paper_processed_by_id():
+@app.route("/load_document_by_id", methods=["POST"])
+def _load_document_by_id():
     print(f"Received request: {request.json}")
 
     paper_id = request.json.get("paper_id", "")
     if not paper_id:
         return jsonify({"error": "Paper ID not provided"}), 400
 
-    path = paper_is_processed(paper_id)
-    if not path:
+    proc_dir = pdf_is_processed(paper_id)
+    if not proc_dir:
         return jsonify({"error": "Paper not processed"}), 404
+    
+    if not pdf_is_structurized(paper_id):
+        return jsonify({"error": "Paper not structurized"}), 404
 
-    hierarchy = load_chapter_hierarchy(path)
+    doc = load_document(proc_dir)
 
     return jsonify(
         {
-            "contents": hierarchy,
+            "contents": doc,
         }
     )
 
 
 @app.route("/img/<path:path>", methods=["GET"])
-def get_img(path):
+def _img(path):
     assert path, "Path is empty"
     assert os.path.exists(path), "Path does not exist"
     assert ARXIV_DIR_PDF_PROCESSED in path, "Path is not in ARXIV_DIR_PDF_PROCESSED"

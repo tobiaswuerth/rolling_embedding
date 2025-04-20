@@ -20,7 +20,7 @@ def list_pdfs():
     return files
 
 
-def paper_is_downloaded(paper_id):
+def pdf_is_downloaded(paper_id):
     assert paper_id, "Paper ID is empty"
     paper_id = clean_for_filename(paper_id)
 
@@ -39,14 +39,14 @@ def get_paper_filename(paper_id, paper_title):
     return f"{paper_id}_{paper_title}.pdf"
 
 
-def download_paper(
+def download_pdf(
     paper_id,
     download_source=False,
     extract_source=False,
     callback: callable = print,
 ) -> str:
     assert paper_id, "Paper ID is empty"
-    assert not paper_is_downloaded(paper_id), "Paper already downloaded"
+    assert not pdf_is_downloaded(paper_id), "Paper already downloaded"
 
     callback("Searching paper on arXiv...")
     client = arxiv.Client()
@@ -59,7 +59,7 @@ def download_paper(
     file_name = get_paper_filename(paper_id, paper_result.title)
     print(f"Downloading PDF {file_name}...")
     paper_result.download_pdf(ARXIV_DIR_PDF_DOWNLOADS, file_name, "arxiv.org")  # todo
-    assert paper_is_downloaded(paper_id), "Paper not downloaded"
+    assert pdf_is_downloaded(paper_id), "Paper not downloaded"
     callback("OK")
     if not download_source:
         return os.path.join(ARXIV_DIR_PDF_DOWNLOADS, file_name)

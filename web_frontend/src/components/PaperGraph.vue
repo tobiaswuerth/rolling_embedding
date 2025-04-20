@@ -48,33 +48,24 @@
       </v-col>
     </v-row>
 
-    <!-- Status Overlay -->
-    <div class="status-overlay" v-if="statusMessage">
-      <div class="overlay-content">
-        <div>{{ statusMessage }}</div>
-        <v-btn :onclick="clearStatus" v-if="statusShowClose" variant="tonal" prepend-icon="mdi-close">Close</v-btn>
-      </div>
-    </div>
-
   </v-container>
 </template>
 
 <script setup>
 import * as d3 from 'd3';
-import { onMounted, ref, nextTick, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { onMounted, ref, nextTick, watch, inject } from 'vue';
 
-const route = useRoute();
-const initialPaperId = route.params.id;
+// Inject data from parent component
+const paperId = inject('paperId');
+const paper = inject('paper');
+const { hideOverlay, showOverlay } = inject('overlay');
+
 const papers = new Map();
 const currentPaper = ref(null);
 const queries = new Map();
 
-const statusMessage = ref("");
-const statusShowClose = ref(false);
-
 const graphContainer = ref(null);
-let graphContent = null; // Container for zooming and panning
+let graphContent = null;
 let simulation = null;
 const links = new Set();
 const d3_nodes = ref([]);
@@ -90,19 +81,6 @@ const configItems = [
   { label: 'Link Attraction', model: linkAttraction, min: -500, max: 0, step: 10 },
 ];
 
-function clearStatus() {
-  statusMessage.value = "";
-  statusShowClose.value = false;
-}
-function showErrorStatus(msg = "Error", error_obj = null) {
-  console.error(msg, error_obj);
-  if (error_obj) {
-    msg += `: ${error_obj}`;
-  }
-  statusMessage.value = msg;
-  statusShowClose.value = true;
-}
-
 watch([linkStiffness, linkAttraction], () => {
   if (!simulation) {
     return;
@@ -112,6 +90,14 @@ watch([linkStiffness, linkAttraction], () => {
   simulation.force('charge').strength(linkAttraction.value);
   simulation.alpha(1).restart();
 });
+
+// Watch for initial paper data change
+watch(paper, (newValue) => {
+  if (newValue && !currentPaper.value) {
+    // Use injected paper data as current paper
+    currentPaper.value = newValue;
+  }
+}, { immediate: true });
 
 function getConnectionCount(d) {
   return d3_links.value.filter(l => l.source.id === d.id || l.target.id === d.id).length;
@@ -289,7 +275,7 @@ function createNode(paper, refNode = null) {
     id: paper.id,
     label: paper.title || `Paper ${paper.id}`,
     date: paper.update_date,
-    isCenter: paper.id === initialPaperId,
+    isCenter: paper.id === paperId,
     x: refNode?.x || 0,
     y: refNode?.y || 0,
     vx: 0,
@@ -336,7 +322,7 @@ function addResultData(results) {
 }
 
 async function loadData(id) {
-  statusMessage.value = "Loading data, please wait...";
+  showOverlay("Loading data...");
 
   try {
     if (!queries.has(id)) {
@@ -354,21 +340,19 @@ async function loadData(id) {
     });
 
     if (!response.ok) {
-      showErrorStatus('Data Loading Response NOT OK', response.status);
+      showOverlay('Error loading paper data', true, response);
       return;
     }
 
     const result = await response.json();
-    statusMessage.value = "";
-
     console.log('API Result:', result);
     queries.set(id, page + 1)
 
     addResultData(result);
     renderGraph();
-
+    hideOverlay();
   } catch (error) {
-    showErrorStatus('Catched Error', error);
+    showOverlay('Error loading paper data', true, error);
   }
 }
 
@@ -412,53 +396,34 @@ onMounted(async () => {
 
   svg.call(zoom);
 
-  await loadData(initialPaperId)
-  currentPaper.value = papers.get(initialPaperId)
-
-  const resizeObserver = new ResizeObserver(entries => {
-    for (let entry of entries) {
-      const { width, height } = entry.contentRect;
-      if (svg) {
-        svg.attr('viewBox', `0 0 ${width} ${height}`);
-        simulation.force('center', d3.forceCenter(width / 2, height / 2))
-          .alpha(0.1)
-          .restart();
-      }
+  loadData(paperId).then(() => {
+    if (paper.value) {
+      currentPaper.value = paper.value;
+      papers.set(paper.value.id, paper.value);
     }
+
+    const resizeObserver = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (svg) {
+          svg.attr('viewBox', `0 0 ${width} ${height}`);
+          simulation.force('center', d3.forceCenter(width / 2, height / 2))
+            .alpha(0.1)
+            .restart();
+        }
+      }
+    });
+    if (graphContainer.value) {
+      resizeObserver.observe(graphContainer.value);
+    }
+  }).catch(error => {
+    console.error('Error loading data:', error);
   });
-  if (graphContainer.value) {
-    resizeObserver.observe(graphContainer.value);
-  }
 });
+
 </script>
 
 <style scoped>
-.status-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(106, 97, 73, 0.343);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-  color: white;
-  font-size: 1.5rem;
-}
-
-.overlay-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 40%;
-}
-
-.overlay-content button {
-  width: 100px;
-}
-
 .graph-config {
   position: absolute;
   width: 400px;
