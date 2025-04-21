@@ -261,11 +261,9 @@ function renderTreemap() {
 }
 
 function updateMap() {
-  showOverlay("Loading treemap...");
   setTimeout(() => {
     renderLegend();
     renderTreemap();
-    hideOverlay();
   });
 }
 
