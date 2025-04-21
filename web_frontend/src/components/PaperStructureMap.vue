@@ -78,8 +78,7 @@ function renderLegend() {
     .style("cursor", "pointer")
     .on("click", (event, d) => {
       visibleChapters[d.name] = !visibleChapters[d.name];
-      renderLegend();
-      renderTreemap();
+      updateMap();
     });
 
   // Add colored rectangles
@@ -182,56 +181,60 @@ function renderTreemap() {
   cellText.each(function (d) {
     const rectWidth = d.x1 - d.x0;
     const rectHeight = d.y1 - d.y0;
-    const min_size = 25;
-    if (rectWidth < min_size || rectHeight < min_size) {
+    const minSize = 25;
+    if (rectWidth < minSize || rectHeight < minSize) {
       return;
-    };
+    }
 
     const node = d3.select(this);
     const words = d.data.name.split(/\s+/);
     const lineHeight = 12; // Line height in pixels
-    const padding_x = 5; // Padding for x-axis
-    const padding_y = 12; // Padding for y-axis
+    const paddingX = 5; // Padding for x-axis
+    const paddingY = 12; // Padding for y-axis
+    let y = paddingY;
     let line = [];
-    let y = padding_y;
     let tspan = node.append("tspan")
-      .attr("x", padding_x)
-      .attr("y", padding_y)
+      .attr("x", paddingX)
+      .attr("y", y)
       .attr("font-size", "10px")
       .attr("font-family", "Arial, sans-serif")
       .attr("fill-opacity", 0.7);
 
-    words.forEach(word => {
-      line.push(word);
+    for (let i = 0; i < words.length; i++) {
+      line.push(words[i]);
       tspan.text(line.join(" "));
-      if (tspan.node().getComputedTextLength() > rectWidth - 2 * padding_x) {
+      if (tspan.node().getComputedTextLength() > rectWidth - 2 * paddingX) {
         line.pop();
         tspan.text(line.join(" "));
-        line = [word];
+        line = [words[i]];
         y += lineHeight;
         if (y + lineHeight / 2 > rectHeight) {
-          return;
+          break;
         }
         tspan = node.append("tspan")
-          .attr("x", padding_x)
+          .attr("x", paddingX)
           .attr("y", y)
           .attr("font-size", "10px")
           .attr("font-family", "Arial, sans-serif")
           .attr("fill-opacity", 0.7)
-          .text(word);
+          .text(words[i]);
       }
-    });
+    }
   });
 }
 
-onMounted(() => {
+function updateMap() {
   showOverlay("Loading treemap...");
   setTimeout(() => {
-    initChapters()
     renderLegend();
     renderTreemap();
     hideOverlay();
   });
+}
+
+onMounted(() => {
+  initChapters();
+  updateMap();
 });
 
 window.addEventListener('resize', () => {
