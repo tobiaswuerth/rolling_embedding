@@ -11,9 +11,13 @@
 <script setup>
 import * as d3 from 'd3';
 import { onMounted, ref, inject, watch, reactive } from 'vue';
+import { useRouter } from 'vue-router';
+const router = useRouter();
 
 const { hideOverlay, showOverlay } = inject('overlay');
+const paperId = inject('paperId');
 const paperDetails = inject('paperDetails');
+
 const data = ref({
   name: "doc",
   children: [],
@@ -22,21 +26,38 @@ const treemapContainer = ref(null);
 const legendContainer = ref(null);
 const visibleChapters = reactive({});
 
-function getChapterData(chapter) {
+function getChapterData(chapter, index) {
   if (chapter.children.length === 0) {
     return {
       name: chapter.data.text || chapter.data.img_path || chapter.data.table_caption || chapter.data.img_caption,
       value: chapter.data.text?.length || chapter.data.img_path?.length || chapter.data.table_caption?.length || chapter.data.img_caption?.length,
+      chapterIndex: null,
     };
   }
   return {
     name: chapter.data.text,
-    children: chapter.children.map(getChapterData),
+    children: getAllChapterData(chapter.children),
+    chapterIndex: index,
   };
+}
+function getAllChapterData(chapters) {
+  const result = [];
+  let index = -1;
+  for (const chapter of chapters) {
+    if (chapter.type === 'chapter') {
+      // match the logic of the tree by hiding certain chapters but keeping index
+      index += 1;
+      if (chapter.children.length === 0) {
+        continue;
+      }
+    }
+    result.push(getChapterData(chapter, index));
+  }
+  return result;
 }
 
 function initChapters() {
-  data.value.children.push(...paperDetails.value.map(getChapterData));
+  data.value.children.push(...getAllChapterData(paperDetails.value));
   data.value.children.forEach(chapter => {
     visibleChapters[chapter.name] = true;
   });
@@ -141,7 +162,23 @@ function renderTreemap() {
     .data(root.leaves())
     .enter()
     .append("g")
-    .attr("transform", d => `translate(${d.x0},${d.y0})`);
+    .attr("transform", d => `translate(${d.x0},${d.y0})`)
+    .attr("cursor", "pointer")
+    .attr("class", "treemap-node") // Add class to the group element for hover effects
+    .on("click", (event, d) => {
+      const path = [];
+
+      let current = d.data.chapterIndex ? d : d.parent;
+      while (current) {
+        if (current.data.chapterIndex !== undefined) {
+          path.unshift(current.data.chapterIndex);
+        }
+        current = current.parent;
+      }
+
+      const structurePath = path.join('.');
+      router.push(`/paper/${paperId}/$$/structure/${structurePath}`);
+    });
 
   const format = d3.format(",d");
   leaf.append("title")
@@ -188,9 +225,9 @@ function renderTreemap() {
 
     const node = d3.select(this);
     const words = d.data.name.split(/\s+/);
-    const lineHeight = 12; // Line height in pixels
-    const paddingX = 5; // Padding for x-axis
-    const paddingY = 12; // Padding for y-axis
+    const lineHeight = 12;
+    const paddingX = 5;
+    const paddingY = 12;
     let y = paddingY;
     let line = [];
     let tspan = node.append("tspan")
@@ -255,5 +292,19 @@ window.addEventListener('resize', () => {
 .treemap-container {
   width: 100%;
   border-radius: 5px;
+}
+
+:deep(.treemap-node) {
+  transition: all 0.2s ease-in-out;
+}
+
+:deep(.treemap-node:hover rect) {
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.7));
+  stroke: white;
+  stroke-width: 1px;
+}
+
+:deep(.treemap-node:hover text) {
+  fill-opacity: 1 !important;
 }
 </style>

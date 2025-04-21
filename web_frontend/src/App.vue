@@ -31,7 +31,12 @@ function hideOverlay() {
 }
 
 function showOverlay(msg, showClose = false, data_obj = null) {
-  console.log(msg, data_obj);
+  if (data_obj) {
+    console.log(msg, data_obj);
+  } else {
+    console.log(msg);
+  }
+
   overlayText.value = data_obj ? msg + `: ${JSON.stringify(data_obj)}` : msg;
   overlayShowClose.value = showClose;
 }

@@ -219,8 +219,13 @@ function updateMathJax() {
 }
 
 function initMathJax() {
-  console.log('Loading MathJax...');
+  if (window.MathJax) {
+    console.log('MathJax already loaded, updating instead');
+    updateMathJax();
+    return;
+  }
 
+  console.log('Loading MathJax...');
   window.MathJax = {
     tex: {
       inlineMath: [['$', '$'], ['\\(', '\\)']],
@@ -273,7 +278,6 @@ function initMathJax() {
   loadMathJaxScript();
 }
 
-// Function to select a chapter based on the path from the URL
 function selectChapterFromPath(path) {
   if (!path || !paperDetails.value) return;
 
