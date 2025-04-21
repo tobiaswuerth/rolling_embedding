@@ -16,6 +16,7 @@ from .arxiv import clean_for_filename, pdf_is_downloaded
 
 ARXIV_DIR_PDF_PROCESSED = "./arxiv_downloads_processed"
 DOC_STRUCTURIZED_FILENAME = "doc_structurized.pkl"
+DOC_MARKDOWN_FILENAME = "paper.md"
 
 
 def list_processed():
@@ -106,10 +107,10 @@ def process_pdf(paper_id, callback: callable = print):
 
     # dump results
     callback("Dumping results...")
-    infer_result.draw_model(os.path.join(proc_dir, f"model.pdf"))
+    infer_result.draw_model(os.path.join(proc_dir, "model.pdf"))
     md_writer = FileBasedDataWriter(proc_dir)
-    pipe_result.dump_md(md_writer, f"paper.md", out_dir_imgs)
-    pipe_result.dump_content_list(md_writer, f"contents.json", out_dir_imgs)
+    pipe_result.dump_md(md_writer, DOC_MARKDOWN_FILENAME, out_dir_imgs)
+    pipe_result.dump_content_list(md_writer, "contents.json", out_dir_imgs)
     # pipe_result.dump_middle_json(md_writer, f'middle.json')
     callback("OK")
 
@@ -317,6 +318,13 @@ def load_document(dir_path: str) -> Content:
     filename = os.path.join(dir_path, DOC_STRUCTURIZED_FILENAME)
     with open(filename, "rb") as f:
         return pickle.load(f)
+
+
+def load_markdown(dir_path: str) -> Content:
+    filename = os.path.join(dir_path, DOC_MARKDOWN_FILENAME)
+    with open(filename, "r", encoding="utf-8") as f:
+        content = f.read()
+    return content
 
 
 def printable_content(contents:Content|list[Content], indent=2) -> str:
