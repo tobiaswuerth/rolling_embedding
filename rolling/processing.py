@@ -4,6 +4,7 @@ from magic_pdf.data.dataset import PymuDocDataset
 from magic_pdf.model.doc_analyze_by_custom_model import doc_analyze
 from magic_pdf.config.enums import SupportedPdfParseMethod
 import json
+from json import JSONEncoder
 import pydantic
 import ollama
 from dataclasses import dataclass
@@ -42,7 +43,9 @@ def pdf_is_structurized(paper_id):
     if not proc_dir:
         return False
     struct_path = os.path.join(proc_dir, DOC_STRUCTURIZED_FILENAME)
-    return os.path.exists(struct_path)
+    if not os.path.exists(struct_path):
+        return False
+    return proc_dir
 
 
 def delete_pdf_structurized(paper_id):
@@ -220,9 +223,38 @@ Your input is:
 @dataclass
 class Content:
     type: str
+    level: int
     data: dict
     children: list["Content"]
-    level: int
+
+
+class ContentJSONEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Content):
+            data = obj.data.copy()
+            data.pop("type", None)  # already present on content obj
+            data.pop("page_idx", None)
+            data.pop("text_level", None)
+
+            for key in [
+                "img_caption",
+                "img_footnote",
+                "table_caption",
+                "table_footnote",
+            ]:
+                if key in data and not data[key]:
+                    data.pop(key, None)
+
+            result = {
+                "type": obj.type,
+                "level": obj.level,
+                "data": data,
+            }
+            if obj.type in ("chapter", "document"):
+                result["children"] = [self.default(child) for child in obj.children]
+
+            return result
+        return super().default(obj)
 
 
 def build_document(content: list, headers: list, hierarchy: DocHierarchy__) -> Content:
@@ -275,17 +307,6 @@ def build_document(content: list, headers: list, hierarchy: DocHierarchy__) -> C
     return document
 
 
-def print_content(contents:Content|list[Content], level:int=0):
-    if isinstance(contents, Content):
-        contents = [contents]
-
-    prefix = "--" * level
-    for content in contents:
-        print(f"{prefix} [{content.level}] {content.type} {content.data}")
-        if content.children:
-            print_content(content.children, level + 1)
-
-
 def save_document(document: Content, dir_path: str):
     filename = os.path.join(dir_path, DOC_STRUCTURIZED_FILENAME)
     with open(filename, "wb") as f:
@@ -296,3 +317,80 @@ def load_document(dir_path: str) -> Content:
     filename = os.path.join(dir_path, DOC_STRUCTURIZED_FILENAME)
     with open(filename, "rb") as f:
         return pickle.load(f)
+
+
+def printable_content(contents:Content|list[Content], indent=2) -> str:
+    return json.dumps(contents, cls=ContentJSONEncoder, indent=indent)
+
+
+def get_content_hierarchy(content: Content) -> list[dict]:
+    if content.type == "document":
+        return [
+            get_content_hierarchy(child)
+            for child in content.children
+            if child.type == "chapter"
+        ]
+
+    result = {
+        content.data["text"]: [
+            get_content_hierarchy(child) for child in content.children
+            if child.type == "chapter"
+        ]
+    }
+    return result
+
+
+class ChapterSummary(pydantic.BaseModel):
+    chapter_title: str
+    summaries: list[str]
+
+def summarize_chapter(chapter: Content, llm_model="gemma3:12b", min_tokens=4096):
+    prompt = f"""
+**Role:** Expert Knowledge Distiller.
+
+**Objective:** Analyze the 'Current Chapter Content'. Your **sole focus** is to extract and synthesize the **absolute core knowledge** (key findings, critical methods/definitions, essential results, crucial context) presented within. Disregard chapter structure and meta-commentary. The goal is a highly condensed summary enabling understanding of the chapter's *contribution* without reading it.
+
+**CRITICAL Instructions:**
+1.  **NO OUTLINES / STRUCTURE:** **Do NOT** list section titles, subsection numbers, or describe the chapter's organization (e.g., AVOID "This chapter discusses X in section Y"). Summarize the *information itself*, not the chapter's structure.
+2.  **SUBSTANCE ONLY:** Generate summary points **only** if the chapter presents significant *new substantive information* (e.g., a new technique, a key result, a core definition) compared to previous summaries. Ignore introductory phrases, forward references, or purely structural sections.
+3.  **EXTREME CONCISENESS:** Aim for **highly condensed** points (like bullet points). Capture the *essence* only. If a detail isn't critical for understanding the main point, omit it. Think "executive summary" level for each key concept.
+4.  **Accuracy:** Base summaries strictly on the provided 'Current Chapter Content'. No external knowledge or interpretation.
+5.  **Empty if Necessary:** If a chapter contains primarily structure, table of contents, people, introductions, references, or information already covered, return an empty `summaries` list (`[]`). Do not summarize just for the sake of summarizing.
+6.  **Output Format:**
+    * Return `[]` for `summaries` if no new *substantive* core knowledge is found.
+    * Otherwise, return a list of concise strings in `summaries`.
+    * The `chapter_title` field *must* exactly match the 'Current Chapter Title'.
+
+**Context:**
+* Current Chapter Title: ``{chapter.data['text']}`` (Use this exact title in output)
+
+**Current Chapter Content to Distill:**
+```{printable_content(chapter, indent=None)}```
+
+Generate the JSON output conforming to the ChapterSummary structure.
+"""
+
+    try:
+        word_count = len(prompt.split())
+        context_length = max(min_tokens, word_count * 3)
+        seed = random.randint(0, 2**30 - 1)
+        print(f"Word-Count: {word_count} / Context length: {context_length} / Seed: {seed}")
+        format = ChapterSummary.model_json_schema()
+        response = ollama.generate(
+            llm_model,
+            prompt,
+            format=format,
+            options={
+                "num_ctx": context_length,
+                "seed": seed,
+            },
+        )
+
+        response = ChapterSummary.model_validate_json(response["response"])
+        assert response is not None, "Response is None"
+        assert response.chapter_title.lower().strip() == chapter.data["text"].lower().strip(), "Chapter title mismatch"
+
+        return response
+    except Exception as e:
+        print(e)
+        return None

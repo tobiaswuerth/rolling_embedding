@@ -19,6 +19,7 @@ from rolling.processing import (
     load_document,
     delete_pdf_structurized,
     ARXIV_DIR_PDF_PROCESSED,
+    summarize_chapter,
 )
 
 from rolling.embedding import GTEEmbeddingModel
@@ -271,6 +272,43 @@ def _img(path):
     with open(path, "rb") as f:
         img = f.read()
     return img, 200, {"Content-Type": "image/jpeg"}
+
+
+@app.route("/generate_chapter_summary", methods=["POST"])
+def _generate_chapter_summary():
+    print(f"Received request: {request.json}")
+
+    paper_id = request.json.get("paper_id", "")
+    chapter_query = request.json.get("chapter", "")
+    if not paper_id:
+        return jsonify({"error": "Paper ID not provided"}), 400
+    if not chapter_query:
+        return jsonify({"error": "Chapter not provided"}), 400
+
+    proc_dir = pdf_is_structurized(paper_id)
+    if not proc_dir:
+        return jsonify({"error": "Paper not structurized"}), 404
+
+    doc = load_document(proc_dir)
+
+    def _find_chapter(content):
+        if content.type in ("chapter", "document"):
+            if content.type == "chapter" and content.data["text"] == chapter_query:
+                return content
+            for child in content.children:
+                result = _find_chapter(child)
+                if result:
+                    return result
+        return None
+
+    chapter = _find_chapter(doc)
+    if not chapter:
+        return jsonify({"error": "Chapter not found"}), 404
+    
+    summary = summarize_chapter(chapter)
+    assert summary is not None, "Summary is None"
+
+    return jsonify(summary.__dict__)
 
 
 if __name__ == "__main__":

@@ -17,6 +17,20 @@
         <v-card v-if="selectedChapter">
           <v-card-title class="text-h6 font-weight-bold">
             {{ selectedChapter.data.text }}
+
+            <v-card class="bg-indigo-lighten-1">
+              <v-card-text v-if="aiSummary">
+                <template v-for="(summary, index) in aiSummary.summaries" :key="index">
+                  <div style="text-wrap: wrap;">
+                    • {{ summary }}
+                  </div>
+                </template>
+              </v-card-text>
+              <v-card-actions v-else>
+                <v-btn prepend-icon="mdi-brain" variant="outlined" @click="generateAISummary"
+                  :loading="isGeneratingAISummary" :disabled="isGeneratingAISummary">Generate Summary</v-btn>
+              </v-card-actions>
+            </v-card>
           </v-card-title>
           <v-card-text>
             <v-container fluid>
@@ -66,7 +80,54 @@ const paperId = inject('paperId');
 const paper = inject('paper');
 const paperDetails = inject('paperDetails');
 const selectedChapter = ref(null);
+
 let tree = null;
+
+const isGeneratingAISummary = ref(false);
+const aiSummary = ref(null);
+const aiSummaries = ref({});
+
+async function generateAISummary() {
+  if (isGeneratingAISummary.value || aiSummary.value) {
+    return;
+  }
+
+  const chapter = findChapterByPath(route.params.chapterPath);
+  if (!chapter) {
+    showOverlay('Chapter not found', true);
+    return;
+  }
+
+  if (aiSummaries.value[chapter.data.text]) {
+    aiSummary.value = aiSummaries.value[chapter.data.text];
+    return;
+  }
+
+  isGeneratingAISummary.value = true;
+  try {
+    const result = await fetch('http://localhost:3001/generate_chapter_summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        paper_id: paperId,
+        chapter: chapter.data.text,
+      }),
+    });
+
+    const data = await result.json();
+    console.log(data);
+    if (!result.ok) {
+      throw new Error(data.error);
+    }
+    aiSummary.value = data;
+    aiSummaries.value[chapter.data.text] = data;
+    updateMathJax();
+  } catch (error) {
+    showOverlay('Error generating AI summary', true, error);
+  } finally {
+    isGeneratingAISummary.value = false;
+  }
+}
 
 function getImageUrl(imgPath) {
   const imgPathEncoded = encodeURIComponent(imgPath);
@@ -124,6 +185,7 @@ function setupTree() {
       chapter = chapter.children.find(entry => entry.data.text === lookingFor);
     }
     selectedChapter.value = chapter;
+    aiSummary.value = aiSummaries.value[chapter.data.text] || null;
     updateMathJax();
 
     // Update the URL with the selected chapter path
@@ -278,8 +340,8 @@ function initMathJax() {
   loadMathJaxScript();
 }
 
-function selectChapterFromPath(path) {
-  if (!path || !paperDetails.value) return;
+function findChapterByPath(path) {
+  if (!path || !paperDetails.value) return null;
 
   try {
     const indices = path.split('.').map(Number);
@@ -289,36 +351,45 @@ function selectChapterFromPath(path) {
     for (const index of indices) {
       if (!chapters[index]) {
         console.warn(`Chapter at index ${index} not found in path:`, path);
-        return;
+        return null;
       }
 
       targetChapter = chapters[index];
       chapters = targetChapter.children.filter(child => child.type === 'chapter');
     }
 
-    if (targetChapter) {
-      selectedChapter.value = targetChapter;
-      updateMathJax();
-
-      // open tree to this chapter
-      const treeElement = getTreeElement();
-      const elements = treeElement.querySelectorAll('[data-type="folder"]>summary, [data-type="file"]');
-      const selectedElement = Array.from(elements).find(el => el.textContent === targetChapter.data.text);
-      if (selectedElement) {
-        tree.select(selectedElement);
-
-        // open all parent folders
-        let parent = selectedElement.closest('details[data-type="folder"]');
-        while (parent) {
-          parent.open = true;
-          parent = parent.parentElement.closest('details[data-type="folder"]');
-        }
-      } else {
-        console.warn('Selected chapter element not found in tree:', targetChapter.data.text);
-      }
-    }
+    return targetChapter;
   } catch (e) {
-    console.error("Error selecting chapter from path:", e);
+    console.error("Error finding chapter by path:", e);
+    return null;
+  }
+}
+
+function selectChapterByPath(path) {
+  const targetChapter = findChapterByPath(path);
+  if (!targetChapter) {
+    console.warn('No chapter found for path:', path);
+    return;
+  }
+
+  selectedChapter.value = targetChapter;
+  updateMathJax();
+
+  // open tree to this chapter
+  const treeElement = getTreeElement();
+  const elements = treeElement.querySelectorAll('[data-type="folder"]>summary, [data-type="file"]');
+  const selectedElement = Array.from(elements).find(el => el.textContent === targetChapter.data.text);
+  if (selectedElement) {
+    tree.select(selectedElement);
+
+    // open all parent folders
+    let parent = selectedElement.closest('details[data-type="folder"]');
+    while (parent) {
+      parent.open = true;
+      parent = parent.parentElement.closest('details[data-type="folder"]');
+    }
+  } else {
+    console.warn('Selected chapter element not found in tree:', targetChapter.data.text);
   }
 }
 
@@ -327,8 +398,15 @@ onMounted(() => {
   setupTree();
 
   if (route.params.chapterPath) {
-    selectChapterFromPath(route.params.chapterPath);
+    selectChapterByPath(route.params.chapterPath);
   } else if (paperDetails.value && paperDetails.value.length > 0) {
+    router.replace({
+      name: route.name,
+      params: {
+        ...route.params,
+        chapterPath: '0'
+      }
+    });
     selectedChapter.value = paperDetails.value[0];
   }
 });
