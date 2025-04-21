@@ -16,21 +16,23 @@
       <v-col cols="9" class="mathjax-process" style="padding:0;">
         <v-card v-if="selectedChapter">
           <v-card-title class="text-h6 font-weight-bold">
-            {{ selectedChapter.data.text }}
-
-            <v-card class="bg-indigo-lighten-1">
-              <v-card-text v-if="aiSummary">
-                <template v-for="(summary, index) in aiSummary.summaries" :key="index">
+            <v-card v-if="aiSummary">
+              <v-card-text class="bg-indigo-lighten-1">
+                <template v-for="(summary, index) in aiSummary.summaries" :key="index" v-if="aiSummary.summaries.length > 0">
                   <div style="text-wrap: wrap;">
                     • {{ summary }}
                   </div>
                 </template>
+                <template v-if="aiSummary.summaries.length === 0">
+                  (empty)
+                </template>
               </v-card-text>
-              <v-card-actions v-else>
-                <v-btn prepend-icon="mdi-brain" variant="outlined" @click="generateAISummary"
-                  :loading="isGeneratingAISummary" :disabled="isGeneratingAISummary">Generate Summary</v-btn>
-              </v-card-actions>
             </v-card>
+            <v-btn v-else class="bg-indigo-lighten-1" prepend-icon="mdi-brain" variant="outlined"
+              @click="generateAISummary" :loading="isGeneratingAISummary" :disabled="isGeneratingAISummary">Generate
+              Summary</v-btn>
+
+            <div class="mt-3">{{ selectedChapter.data.text }}</div>
           </v-card-title>
           <v-card-text>
             <v-container fluid>
