@@ -5,9 +5,11 @@ The goal is to analyse texts by generating vector embeddings using AI. I'd like 
 ---
 # Overview
 
-- [Setup](#setup)
+Also see:
+- [Setup](./docs/setup.md)
+- [Web-App Showcase](./docs/app.md)
 
-Documentation:
+In this file I document my process and some of my experiments:
 - [Generating Text Embeddings](#generate_text_embedding)
 - [Getting Data](#getting_data)
 - [Initial Testing](#initial_testing)
@@ -49,26 +51,6 @@ For example, in [playground_4a_comparison.ipynb](playground_4a_comparison.ipynb)
 ![3d_embedding_plot](https://github.com/user-attachments/assets/77dd532c-e92e-4ccb-9c5d-9dd3dd404a98)
 
 In [playground_4b_similarity_search.ipynb](playground_4b_similarity_search.ipynb) I used this to search papers that match my query.
-
----
-
-## <a id="building_app"></a>Building an App
-All the experiments worked more or less good but I felt like to actually get the best results I
-1. need way more data, and
-2. need a better way to interact with it
-
-I ended up with the following setup:
-
-![diagram drawio](https://github.com/user-attachments/assets/be7dff91-e070-4200-b1fc-757112ffe362)
-
-This allows me to build an app using the full capabilities of HTML, CSS and JavaScript and utilize powerful functions in the [Python backend](web_backend.py).
-
-To start, I implemented `match_phrase` (search by text) and `KNN query` (search by embedding) search capabilities. This allows me to find papers that include the exact phrasing as well as ones that are semantically similar.
-I then added a graph to visualize the most similar papers for a given one, with abstract preview and the ability to expand nodes as desired:
-
-![frontend_showcase](https://github.com/user-attachments/assets/3060781e-485b-4756-8057-bfc133c1ef3d)
-
-I have plans to build upon this and add more novel functionality to explore the arXiv papers.
 
 ---
 
@@ -213,42 +195,3 @@ Moving from larger to smaller chunk sizes initially reduces the relative change.
 Taking a moving average and identifying the smallest value shows that the chunk size with the smallest relative change is around 1024 characters. This must not mean that this is the ideal size though. The delta between the location of the centroid at that timestep with the earlier ones is apparent. One can argue that a good chunk size might as well be around 2048 characters. I think going too big or too small does not make much sense.
 
 All of this applies only to this model. Other embedding models generate larger embedding vectors and have different properties. Further tests are needed.
-
----
-# <a id="setup"></a>Setup
-Tested on Windows.
-
-## Python
-```bash
-py -m venv .venv
-.\.venv\Scripts\activate
-pip3 install -r .\requirements.txt
-```
-
-For processing PDFs I use [MinerU](https://github.com/opendatalab/MinerU) which needs to be setup, i.e. download the models used for PDF processing like this:
-```bash
-wget https://github.com/opendatalab/MinerU/raw/master/scripts/download_models_hf.py -O download_models_hf.py
-py download_models_hf.py
-del download_models_hf.py
-```
-
-## Web-Backend
-```bash
-.\.venv\Scripts\activate
-py .\web_backend.py
-```
-
-This should start the backend server on http://localhost:3001
-
-## Web-Frontend
-```bash
-cd .\web_frontend\
-npm install
-npm run dev
-```
-This should open locally on http://localhost:3000/
-
-and to build a distributable
-```bash
-npm run build
-```
