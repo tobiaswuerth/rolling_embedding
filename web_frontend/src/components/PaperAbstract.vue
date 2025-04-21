@@ -16,11 +16,8 @@
 </template>
 
 <script setup>
-import { ref, inject } from 'vue';
 
+import { inject } from 'vue';
 const paper = inject('paper');
 
 </script>
-
-<style scoped>
-</style>

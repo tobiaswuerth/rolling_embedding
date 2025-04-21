@@ -56,7 +56,7 @@
 <script setup>
 import '../lib/tree.js-master/tree.js';
 import '../lib/tree.js-master/tree.css';
-import { onMounted, ref, inject, watch } from 'vue';
+import { onMounted, ref, inject } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 const router = useRouter();
 const route = useRoute();

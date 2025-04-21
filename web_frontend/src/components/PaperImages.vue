@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, inject, watch } from 'vue';
+import { onMounted, ref, inject } from 'vue';
 
 const paperId = inject('paperId');
 const paper = inject('paper');
@@ -51,5 +51,3 @@ onMounted(() => {
   prepareImages();
 });
 </script>
-
-<style scoped></style>

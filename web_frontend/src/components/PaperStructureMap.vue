@@ -302,6 +302,6 @@ window.addEventListener('resize', () => {
 }
 
 :deep(.treemap-node:hover text) {
-  fill-opacity: 1 !important;
+  fill-opacity: 1!important;
 }
 </style>

@@ -177,5 +177,3 @@ watch([is_downloaded, is_processed, is_structurized], (newValue) => {
 }, { immediate: true });
 
 </script>
-
-<style scoped></style>
