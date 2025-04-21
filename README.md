@@ -13,7 +13,6 @@ In this file I document my process and some of my experiments:
 - [Generating Text Embeddings](#generate_text_embedding)
 - [Getting Data](#getting_data)
 - [Initial Testing](#initial_testing)
-- [Building an App](#building_app)
 - [Different Approaches to Generating Embeddings ](#embedding_approaches)
 - [Different Chunk Sizes](#different-chunk-sizes)
 - [Data Quality Issue](#data_quality_issue)
