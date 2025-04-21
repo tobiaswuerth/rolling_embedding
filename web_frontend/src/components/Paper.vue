@@ -13,8 +13,8 @@
   <v-card>
     <v-tabs bg-color="indigo-darken-4">
       <v-tab :to="`/paper/${paperId}`" prepend-icon="mdi-text-short" value="abstract">Abstract</v-tab>
-      <v-tab :to="`/paper/${paperId}/proc/structure`" prepend-icon="mdi-view-list-outline" value="hierarchy">Structure</v-tab>
-      <v-tab :to="`/paper/${paperId}/proc/images`" prepend-icon="mdi-image-outline" value="images">Images</v-tab>
+      <v-tab :to="`/paper/${paperId}/$$/structure`" prepend-icon="mdi-view-list-outline" value="hierarchy">Structure</v-tab>
+      <v-tab :to="`/paper/${paperId}/$$/images`" prepend-icon="mdi-image-outline" value="images">Images</v-tab>
       <v-tab :to="`/paper/${paperId}/graph`" prepend-icon="mdi-graph" value="graph">Similarity Graph</v-tab>
     </v-tabs>
   </v-card>

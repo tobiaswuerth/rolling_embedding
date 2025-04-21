@@ -54,15 +54,19 @@
 </template>
 
 <script setup>
-import { onMounted, ref, inject, watch } from 'vue';
 import '../lib/tree.js-master/tree.js';
 import '../lib/tree.js-master/tree.css';
+import { onMounted, ref, inject, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+const router = useRouter();
+const route = useRoute();
 
 const { hideOverlay, showOverlay } = inject('overlay');
 const paperId = inject('paperId');
 const paper = inject('paper');
 const paperDetails = inject('paperDetails');
 const selectedChapter = ref(null);
+let tree = null;
 
 function getImageUrl(imgPath) {
   const imgPathEncoded = encodeURIComponent(imgPath);
@@ -90,13 +94,25 @@ function deleteStructure() {
   });
 }
 
-function setupTree() {
-  const tree = new Tree(document.getElementById('tree'));
+function getTreeElement() {
+  return document.getElementById('tree');
+}
 
+function setupTree() {
+  tree = new Tree(getTreeElement());
+  // tree.on('open', e => console.log('event "open"', e));
+  // tree.on('action', e => console.log('event "action"', e));
+  // tree.on('fetch', e => console.log('event "fetch"', e));
+  // tree.on('browse', e => console.log('event "browse"', e));
   tree.on('select', e => {
-    if (e.tagName === 'SUMMARY' && !e.closest('details').open) {
-      const details = e.closest('details');
-      tree.open(details);
+    // console.log('select', e.tagName, e);
+    if (e.tagName.toLowerCase() === 'summary') {
+      const isOpen = e.parentElement.open;
+      setTimeout(() => {
+        if (!isOpen && !e.parentElement.open) {
+          tree.open(e.parentElement);
+        }
+      }, 100);
     }
 
     const hierarchy = tree.hierarchy(e);
@@ -109,6 +125,18 @@ function setupTree() {
     }
     selectedChapter.value = chapter;
     updateMathJax();
+
+    // Update the URL with the selected chapter path
+    const chapterPath = findChapterPath(paperDetails.value, chapter);
+    if (chapterPath) {
+      router.replace({
+        name: route.name,
+        params: {
+          ...route.params,
+          chapterPath: chapterPath.join('.')
+        }
+      });
+    }
   });
 
   function _createStructureEntry(entry) {
@@ -128,16 +156,71 @@ function setupTree() {
   tree.json(structure);
 }
 
+function findChapterPath(chapters, targetChapter, currentPath = []) {
+  for (let i = 0; i < chapters.length; i++) {
+    if (chapters[i] === targetChapter) {
+      return [...currentPath, i];
+    }
+
+    if (chapters[i].children && chapters[i].children.length > 0) {
+      const childPath = findChapterPath(
+        chapters[i].children.filter(child => child.type === 'chapter'),
+        targetChapter,
+        [...currentPath, i]
+      );
+      if (childPath) {
+        return childPath;
+      }
+    }
+  }
+  return null;
+}
+
 function updateMathJax() {
   setTimeout(() => {
-    window.MathJax.startup.promise.then(() => {
-      window.MathJax.typesetPromise().catch(console.error);
-    }).catch(console.error);
+    if (!window.MathJax || !window.MathJax.startup) {
+      console.warn('MathJax not available yet, will retry later');
+      setTimeout(updateMathJax, 100);
+      return;
+    }
+
+    try {
+      if (!window.MathJax.startup.document) {
+        console.warn('MathJax document not ready, will retry');
+        setTimeout(updateMathJax, 100);
+        return;
+      }
+
+      if (typeof window.MathJax.typesetClear === 'function') {
+        try {
+          window.MathJax.typesetClear();
+        } catch (err) {
+          console.warn('Error clearing MathJax:', err);
+        }
+      }
+
+      const mathContainer = document.querySelector('.mathjax-process');
+      if (!mathContainer) {
+        console.warn('No .mathjax-process element found');
+        return;
+      }
+
+      Promise.resolve().then(() => {
+        if (window.MathJax.typesetPromise) {
+          return window.MathJax.typesetPromise([mathContainer]);
+        }
+      }).catch(err => {
+        console.error('MathJax typesetting error:', err);
+      });
+    } catch (err) {
+      console.error('Error during MathJax processing:', err);
+    }
   });
 }
 
 function initMathJax() {
   console.log('Loading MathJax...');
+
   window.MathJax = {
     tex: {
       inlineMath: [['$', '$'], ['\\(', '\\)']],
@@ -145,6 +228,7 @@ function initMathJax() {
       macros: {
         textcircled: ['\\enclose{circle}{#1}', 1],
       },
+      processEscapes: true,
     },
     svg: {
       fontCache: 'global'
@@ -153,18 +237,96 @@ function initMathJax() {
       ignoreHtmlClass: 'mathjax-ignore',
       processHtmlClass: 'mathjax-process',
     },
+    startup: {
+      pageReady: () => {
+        console.log('MathJax page is ready');
+        return window.MathJax.startup.defaultPageReady().catch(err => {
+          console.warn('Error in MathJax pageReady:', err);
+        });
+      }
+    }
   };
-  var script = document.createElement('script');
-  script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js';
-  script.async = true;
-  script.onload = () => console.log('MathJax loaded successfully');
-  script.onerror = () => console.error('Failed to load MathJax');
-  document.head.appendChild(script);
+
+  const loadMathJaxScript = () => {
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js';
+    script.async = true;
+    script.onload = () => {
+      console.log('MathJax loaded successfully');
+
+      const checkMathJaxReady = () => {
+        if (window.MathJax && window.MathJax.typesetPromise && window.MathJax.startup && window.MathJax.startup.document) {
+          setTimeout(updateMathJax);
+        } else {
+          console.log('MathJax not fully initialized, waiting...');
+          setTimeout(checkMathJaxReady, 100);
+        }
+      };
+
+      checkMathJaxReady();
+    };
+
+    script.onerror = () => console.error('Failed to load MathJax');
+    document.head.appendChild(script);
+  };
+
+  loadMathJaxScript();
+}
+
+// Function to select a chapter based on the path from the URL
+function selectChapterFromPath(path) {
+  if (!path || !paperDetails.value) return;
+
+  try {
+    const indices = path.split('.').map(Number);
+    let chapters = paperDetails.value;
+    let targetChapter = null;
+
+    for (const index of indices) {
+      if (!chapters[index]) {
+        console.warn(`Chapter at index ${index} not found in path:`, path);
+        return;
+      }
+
+      targetChapter = chapters[index];
+      chapters = targetChapter.children.filter(child => child.type === 'chapter');
+    }
+
+    if (targetChapter) {
+      selectedChapter.value = targetChapter;
+      updateMathJax();
+
+      // open tree to this chapter
+      const treeElement = getTreeElement();
+      const elements = treeElement.querySelectorAll('[data-type="folder"]>summary, [data-type="file"]');
+      const selectedElement = Array.from(elements).find(el => el.textContent === targetChapter.data.text);
+      if (selectedElement) {
+        tree.select(selectedElement);
+
+        // open all parent folders
+        let parent = selectedElement.closest('details[data-type="folder"]');
+        while (parent) {
+          parent.open = true;
+          parent = parent.parentElement.closest('details[data-type="folder"]');
+        }
+      } else {
+        console.warn('Selected chapter element not found in tree:', targetChapter.data.text);
+      }
+    }
+  } catch (e) {
+    console.error("Error selecting chapter from path:", e);
+  }
 }
 
 onMounted(() => {
   initMathJax();
   setupTree();
+
+  if (route.params.chapterPath) {
+    selectChapterFromPath(route.params.chapterPath);
+  } else if (paperDetails.value && paperDetails.value.length > 0) {
+    selectedChapter.value = paperDetails.value[0];
+  }
 });
 </script>
 

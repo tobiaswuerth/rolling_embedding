@@ -34,7 +34,7 @@ const routes = [
         component: SearchView
     },
     {
-        path: '/paper/:id(.*)',
+        path: '/paper/:id([0-9a-zA-Z_\\-\\.]+)',
         component: PaperView,
         children: [
             {
@@ -46,11 +46,11 @@ const routes = [
                 component: PaperGraphView,
             },
             {
-                path: 'proc',
+                path: '$$', // Escaped $$ path
                 component: PaperProcessedView,
                 children: [
                     {
-                        path: 'structure',
+                        path: 'structure/:chapterPath([0-9\\.]+)?',
                         component: PaperStructureView,
                         children: [
                             {
