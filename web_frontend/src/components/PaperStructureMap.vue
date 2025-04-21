@@ -35,6 +35,13 @@ function getChapterData(chapter) {
   };
 }
 
+function initChapters() {
+  data.value.children.push(...paperDetails.value.map(getChapterData));
+  data.value.children.forEach(chapter => {
+    visibleChapters[chapter.name] = true;
+  });
+}
+
 function renderLegend() {
   if (!legendContainer.value || data.value.children.length === 0) {
     return;
@@ -151,7 +158,6 @@ function renderTreemap() {
     .attr("id", (d, i) => `leaf-${i}`)
     .attr("fill", d => {
       let node = d;
-      // Go up to the second level for color grouping
       while (node.depth > 1) {
         node = node.parent;
       }
@@ -219,15 +225,13 @@ function renderTreemap() {
 }
 
 onMounted(() => {
-  data.value.children.push(...paperDetails.value.map(getChapterData));
-
-  // Initialize all chapters as visible
-  data.value.children.forEach(chapter => {
-    visibleChapters[chapter.name] = true;
+  showOverlay("Loading treemap...");
+  setTimeout(() => {
+    initChapters()
+    renderLegend();
+    renderTreemap();
+    hideOverlay();
   });
-
-  renderLegend();
-  renderTreemap();
 });
 
 window.addEventListener('resize', () => {
