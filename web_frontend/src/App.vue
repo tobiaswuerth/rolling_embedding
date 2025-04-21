@@ -20,7 +20,14 @@
 
 <script setup>
 import { ref, provide } from 'vue';
+import { useRouter } from 'vue-router';
 import AppFooter from './components/AppFooter.vue';
+
+const router = useRouter();
+function navigateTo(path) {
+  router.push(path);
+}
+provide('navigateTo', navigateTo);
 
 const overlayText = ref("");
 const overlayShowClose = ref(false);

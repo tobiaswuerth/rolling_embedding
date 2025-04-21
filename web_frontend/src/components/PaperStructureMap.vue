@@ -10,10 +10,9 @@
 
 <script setup>
 import * as d3 from 'd3';
-import { onMounted, ref, inject, watch, reactive } from 'vue';
-import { useRouter } from 'vue-router';
-const router = useRouter();
+import { onMounted, ref, inject, reactive } from 'vue';
 
+const navigateTo = inject('navigateTo');
 const { hideOverlay, showOverlay } = inject('overlay');
 const paperId = inject('paperId');
 const paperDetails = inject('paperDetails');
@@ -177,7 +176,7 @@ function renderTreemap() {
       }
 
       const structurePath = path.join('.');
-      router.push(`/paper/${paperId}/$$/structure/${structurePath}`);
+      navigateTo(`/paper/${paperId}/$$/structure/${structurePath}`);
     });
 
   const format = d3.format(",d");

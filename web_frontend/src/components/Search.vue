@@ -52,10 +52,10 @@
 
 <script setup>
 import { onMounted, ref, inject, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 const route = useRoute();
-const router = useRouter();
 
+const navigateTo = inject('navigateTo');
 const { hideOverlay, showOverlay } = inject('overlay');
 const search = ref('');
 const results = ref([]);
@@ -66,10 +66,7 @@ watch(exact_match, (newValue) => {
 });
 
 async function onSearch() {
-  // update route
-  router.push({
-    query: { ...route.query, search: search.value, exact_match: exact_match.value }
-  }).catch(console.error)
+  navigateTo(`?search=${search.value}&exact_match=${exact_match.value}`)
 
   showOverlay("Searching...")
   const endpoint = exact_match.value ? 'search_by_text' : 'search_by_embedding';

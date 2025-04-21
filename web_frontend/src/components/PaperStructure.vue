@@ -1,9 +1,10 @@
 <template>
 
   <v-card>
-    <v-tabs bg-color="indigo-darken-2">
-      <v-tab :to="`/paper/${paperId}/$$/structure`" prepend-icon="mdi-car-shift-pattern" value="hierarchy">Tree</v-tab>
-      <v-tab :to="`/paper/${paperId}/$$/structure/map`" prepend-icon="mdi-grid" value="images">Map</v-tab>
+    <v-tabs v-model="activeTab" bg-color="indigo-darken-2">
+      <v-tab @click="navigateTo(`/paper/${paperId}/$$/structure`)" prepend-icon="mdi-car-shift-pattern"
+        value="tree">Tree</v-tab>
+      <v-tab @click="navigateTo(`/paper/${paperId}/$$/structure/map`)" prepend-icon="mdi-grid" value="map">Map</v-tab>
     </v-tabs>
   </v-card>
 
@@ -11,10 +12,15 @@
 </template>
 
 <script setup>
-import { onMounted, ref, inject, watch } from 'vue';
+import { inject, computed } from 'vue';
+import { useRoute } from 'vue-router';
 
 const paperId = inject('paperId');
 
-</script>
+const route = useRoute();
+const navigateTo = inject('navigateTo');
+const activeTab = computed(() => {
+  return route.path.endsWith('/map') ? 'map' : 'tree';
+});
 
-<style scoped></style>
+</script>

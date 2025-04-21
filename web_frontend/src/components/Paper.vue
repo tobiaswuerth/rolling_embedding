@@ -11,11 +11,14 @@
   </v-app-bar>
 
   <v-card>
-    <v-tabs bg-color="indigo-darken-4">
-      <v-tab :to="`/paper/${paperId}`" prepend-icon="mdi-text-short" value="abstract">Abstract</v-tab>
-      <v-tab :to="`/paper/${paperId}/$$/structure`" prepend-icon="mdi-view-list-outline" value="hierarchy">Structure</v-tab>
-      <v-tab :to="`/paper/${paperId}/$$/images`" prepend-icon="mdi-image-outline" value="images">Images</v-tab>
-      <v-tab :to="`/paper/${paperId}/graph`" prepend-icon="mdi-graph" value="graph">Similarity Graph</v-tab>
+    <v-tabs v-model="activeTab" bg-color="indigo-darken-4">
+      <v-tab @click="navigateTo(`/paper/${paperId}`)" prepend-icon="mdi-text-short" value="abstract">Abstract</v-tab>
+      <v-tab @click="navigateTo(`/paper/${paperId}/$$/structure`)" prepend-icon="mdi-view-list-outline"
+        value="structure">Structure</v-tab>
+      <v-tab @click="navigateTo(`/paper/${paperId}/$$/images`)" prepend-icon="mdi-image-outline"
+        value="images">Images</v-tab>
+      <v-tab @click="navigateTo(`/paper/${paperId}/graph`)" prepend-icon="mdi-graph" value="graph">Similarity
+        Graph</v-tab>
     </v-tabs>
   </v-card>
 
@@ -23,10 +26,12 @@
 </template>
 
 <script setup>
-import { onMounted, ref, provide, inject } from 'vue';
+import { onMounted, ref, provide, inject, computed } from 'vue';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
+const navigateTo = inject('navigateTo');
+
 const paperId = route.params.id;
 
 const { hideOverlay, showOverlay } = inject('overlay');
@@ -40,6 +45,9 @@ provide('is_downloaded', is_downloaded);
 provide('is_processed', is_processed);
 provide('is_structurized', is_structurized);
 
+const activeTab = computed(() => {
+  return route.path.endsWith('/graph') ? 'graph' : route.path.endsWith('/images') ? 'images' : route.path.includes('/structure') ? 'structure' : 'abstract';
+});
 
 async function loadData() {
   showOverlay("Loading paper data...");
@@ -75,6 +83,3 @@ onMounted(() => {
   loadData();
 });
 </script>
-
-<style scoped>
-</style>
