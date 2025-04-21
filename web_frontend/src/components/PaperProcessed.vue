@@ -145,7 +145,7 @@ function structurizePDF() {
 }
 
 async function loadDataProcessed() {
-  showOverlay("Loading paper data...");
+  showOverlay("Loading paper structure...");
 
   try {
     const response = await fetch('http://localhost:3001/load_document_by_id', {
